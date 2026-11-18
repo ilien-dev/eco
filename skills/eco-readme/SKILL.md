@@ -72,6 +72,12 @@ and discard reasons in `keywords.json` too: the report quotes them.
 `eco.py brief` checks it and keeps a copy of every surface in `.eco/readme/original/`: that copy
 is the baseline every later comparison uses, so run `brief` before you change any text.
 
+When the project has a GitHub repository the user can push to, save who reaches it today:
+`eco.py traffic --stage before` prints two `gh api` commands; run them, then run it again. It
+records the unique visitors of the last 14 days: from search engines, from other GitHub pages and
+in all. GitHub keeps 14 days and nothing older, so a reading skipped now cannot be taken later.
+With no `gh`, or no push access, skip it: the report then has positions and no visitors.
+
 ## 2. Research, as deep as the gate demands and then some
 
 Read [references/research.md](references/research.md) before starting; it has the seed
@@ -99,7 +105,10 @@ that only shows up when you search in Spanish.
    step 8 compares with, so keep the names as printed.
 3. **Competitors.** Find the READMEs and pages that rank for the main searches today, save them
    under `.eco/readme/raw/competitors/`, then `eco.py competitors`. It lists their titles,
-   descriptions and headings and the phrases two or more of them share.
+   descriptions and headings and the phrases two or more of them share. It also lists the
+   subtopics they share (a heading in one that at least two of them write about) and which ones
+   your README never mentions: candidates for a section in step 4, only where the project has a
+   true answer. The report counts them covered before and after; none is required.
 
 `eco.py research` checks the depth: for the main language (the first in the brief) 20 non-empty
 responses (one seed counts for 8 at most), 5 fetched seeds and 4 of the 5 families; for each
@@ -237,7 +246,8 @@ at most three short lines, only for a decision the user has to make.
 
 The report has a "What is proven" part with three kinds of evidence, and you add none of your
 own: what the files show (researched phrases in the text, before and after), what the pages that
-rank today do with each primary and whether this one now does it too, and the published copy.
+rank today do with each primary and how many of their shared subtopics this README covers, and
+the published copy.
 That last line reads "not checked" until step 8 has run. Never tell the user the project ranks
 better, or will: say what was measured, and that the position can only be measured once the
 changes are public.
@@ -268,9 +278,13 @@ at the end of step 7 when the project has a GitHub repository.
    `eco.py offsite`; the search-engine rows do not depend on that.
 4. It prints one row per search: before, after and a result. "too early to tell" means the
    position has not moved and the index has had under 3 days (GitHub) or 14 days (search
-   engines): run it again later. Then run `eco.py report --lang <code>` again so the page shows
-   the rows. If the files changed since the final audit the report refuses, and
-   `.eco/readme/track.md` is what you show.
+   engines): run it again later.
+5. Visitors, when step 1 saved a reading: 14 days after the changes went public,
+   `eco.py traffic --stage after` prints the two commands again and then compares. Before that it
+   refuses, because GitHub's 14 days would still hold days of the old README. A position says
+   where the repository shows up; this says whether more people arrived from a search.
+6. Run `eco.py report --lang <code>` again so the page shows the rows. If the files changed
+   since the final audit the report refuses, and `.eco/readme/track.md` is what you show.
 
 Give the user the rows as printed, the worse ones too, and say that each move is measured while
 its cause is not proven: other repositories change as well. With no GitHub repository, or when

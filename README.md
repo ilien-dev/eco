@@ -14,10 +14,13 @@ other sites are out of its reach, and it says so.
    search. When a project is so niche that nobody searches for it by name, it looks for the
    nearest problems and alternatives people do search.
 2. **Researches keywords per language**: autocomplete from Google, Bing and DuckDuckGo, GitHub repository search
-   (with where your repo ranks today) and the pages and READMEs of competitors.
+   (with where your repo ranks today) and the pages and READMEs of competitors, with the subtopics
+   they share and you never mention. For a site with Search Console, an export of your own
+   queries: the searches Google already shows you for at positions 5 to 20 come first.
 3. **Builds a keyword map**: primary, secondary, long-tail and discarded phrases, each with the
    research that backs it and the places it has to appear (title, meta description, H1, lead,
-   headings, alt text, FAQ, GitHub About and topics).
+   headings, alt text, FAQ, GitHub About and topics). On a site with several pages, each phrase
+   belongs to one page, so two of your pages never compete for the same search.
 4. **Rewrites the text** so those words sit where they count, without stuffing and without
    claims the project cannot back.
 5. **On a website, checks what surrounds the pages**: robots.txt (and whether AI search bots such
@@ -48,6 +51,9 @@ to produce the report until each check passes:
   are one search, and a README primary needs a repository or GitHub topic page in its top 10
   (or a recorded reason to keep it);
 - primary keywords sit in their required places, with no stuffing flags;
+- on a site with several pages, every phrase names its page and no primary sits on two;
+- every changed page of a site has a link from another page of the build, a canonical that names
+  itself and no meta refresh;
 - on a site, robots.txt lets search and AI search bots in and names the sitemap, the sitemap
   lists every changed page, an llms.txt (when there is one) has the shape llmstxt.org asks for,
   and every Lighthouse audit that weighs on a score passes on the final pages, or is recorded as
@@ -65,7 +71,10 @@ already do, and the search position. That last one can only move once the change
 it reads "not checked" until you publish and run the last step. `eco.py track` then repeats the
 searches saved during the research, refuses while the public copy still shows the old text, and
 gives each search a result: improved, no change, worse, or too early to tell. For a site,
-`eco.py gsc` reads two Search Console exports, one from before and one from after.
+`eco.py gsc` compares Search Console exports from before and after, position and click rate, and
+`eco.py field` compares what real Chrome users measured (LCP, INP, CLS) when you have a free
+Chrome UX Report key. For a README, `eco.py traffic` compares GitHub's own count of visitors who
+arrived from a search engine, 14 days before against 14 days after.
 
 ## Install
 
@@ -128,9 +137,16 @@ back. Like the other projects by the same author, it takes its name from mytholo
   are estimates that move a few points between runs, and TBT stands in for INP, which only field
   data has. A score of 100 is the target, not a promise: some sites hit a ceiling (a third-party
   script they need, a host without header settings), and the report says which and why.
-- Version 0.1.0: the README skill was tested on four projects by one person in Claude Code; the
-  site checks and the Lighthouse step are new. A project with no repo and other agents have not
-  been tried yet.
+- Field data needs a Google API key of yours (`CRUX_API_KEY`) and a site with enough Chrome
+  visits; a small site has none, and the report says so. GitHub traffic needs push access to the
+  repository and covers 14 days, so the "before" has to be saved during the run.
+- A subtopic is counted by its words: the report says how many of the subtopics the ranking
+  pages share appear in your text, not how well your text answers them.
+- Version 0.2.0: the README skill was tested on four projects by one person in Claude Code. The
+  site checks, the Lighthouse step and everything added in 0.2.0 (a page per phrase, Search
+  Console in the research, click rate, GitHub traffic, field data, links between pages, shared
+  subtopics) are covered by the test suite and have not been through a full run on a real
+  project yet. A project with no repo and other agents have not been tried either.
 
 ## License
 

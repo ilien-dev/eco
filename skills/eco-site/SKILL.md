@@ -115,6 +115,13 @@ Then the Lighthouse baseline, before any edit: scan as "Where Lighthouse scans" 
 changed. It lists every audit under 1 per page (`OPEN`) and the diagnostics behind them
 (`hint`): that is the work list for step 7, and the "before" column of the report.
 
+Lighthouse measures in a lab. What real visitors measured comes from the Chrome UX Report, and it
+has the one number Lighthouse lacks, INP. When `CRUX_API_KEY` is set in the environment, run
+`eco.py field --stage baseline`: it asks for each page on phones and falls back to the whole site
+when a page has too few visits. The key is a free Google API key the user creates; never create
+one or ask for it to be pasted into the chat. Without it, skip this: the report then says the
+speed numbers are lab estimates. A metric outside the "good" range goes to Pending by itself.
+
 ## 2. Research, as deep as the gate demands and then some
 
 Read [references/research.md](references/research.md) before starting; it has the seed
@@ -134,7 +141,18 @@ shows up when you search in that language.
    when Google makes you wait, plan the next batch with `--engine bing` or `--engine ddg`.
 2. **Competitors.** Find the pages that rank for the main searches today, save their HTML under
    `.eco/site/raw/competitors/`, then `eco.py competitors`. It lists their titles, descriptions
-   and headings and the phrases two or more of them share.
+   and headings and the phrases two or more of them share. It also lists the subtopics they
+   share (a heading in one page that at least two of them write about) and which ones your pages
+   never mention: candidates for a section or an FAQ answer in step 4, only where the site has a
+   true answer. The report counts them covered before and after; none is required.
+3. **Search Console, when the site has it.** It is the only source here with real numbers from
+   Google. Ask the user once for a CSV export of the Performance report, Queries tab, last 28
+   days, without "Compare" (a site with no Search Console, or a user who says no: skip it). Then
+   `eco.py gsc <file> --stage research --period START..END`. It lists the searches Google
+   already shows the site for at an average position of 5 to 20: demand that exists and that few
+   people reach, so weigh them first as primaries, with `search-console` as evidence. It also
+   names the queries already in the top 4: leave their words where they are. Keep the file; it is
+   the "before" of step 9.
 
 `eco.py research` checks the depth: for the main language 20 non-empty responses (one seed counts
 for 8 at most), 5 fetched seeds and 4 of the 5 families; for each other language 10, 3 and 3; one
@@ -165,9 +183,14 @@ Write `.eco/site/keywords.json`:
   phrasings, good for an FAQ), `discarded` (with a `reason`). Keep at least 10 phrases and
   discard at least 3. `lead` is the first paragraph: a primary can live there when the H1 is a
   slogan the owner wants to keep. One primary is a fine result for a small page.
-- `evidence`: `suggest` and `competitor` are checked against the research files;
-  `search-console` and `trends` are taken on trust. A primary needs demand evidence (`suggest`,
-  `search-console` or `trends`).
+- `evidence`: `suggest` and `competitor` are checked against the research files, and
+  `search-console` against the export once `gsc --stage research` read one; without an export it
+  is taken on trust, as `trends` is. A primary needs demand evidence (`suggest`, `search-console`
+  or `trends`).
+- `surfaces`: the page a phrase belongs to, as its path in the brief (`["dist/pricing/index.html"]`).
+  Required as soon as the run has two or more pages in one language, and a primary names exactly
+  one: two pages aimed at the same search compete for it and both rank lower. Give each page its
+  own primaries, chosen by what the page is about. With one page per language, leave it out.
 - `placements`: `title meta h1 h2 h3 alt og jsonld body`.
   [references/placements.md](references/placements.md) says what each one weighs and how to
   write it.
@@ -229,6 +252,10 @@ applies; the short version:
     that matter. AI assistants and agents read it; Google Search does not. A missing one goes to
     Pending; offer to write it, and when it exists the audit checks its shape.
   Generated files (a sitemap plugin, a robots route) are fixed in their config, then rebuilt.
+- Between the pages of the build, read as a crawler reads them: every page in scope needs a link
+  from another page (flagged when none has one; the home page is exempt, and `hreflang` links
+  count), its canonical names itself, and it carries no meta refresh. A link to an address the
+  build lacks is noted for Pending: a redirect or a server route explains it, otherwise fix it.
 
 Rebuild, then `eco.py audit` until no primary is missing and there are no flags. A saved
 snapshot does not update itself: after a fix, save it again. Then `eco.py audit --save pre-quiron`.
@@ -311,7 +338,8 @@ at most three short lines, only for a decision the user has to make.
 
 The report has a "What is proven" part with three kinds of evidence, and you add none of your
 own: what the files show (researched phrases in the text, before and after), what the pages that
-rank today do with each primary and whether this one now does it too, and the published copy.
+rank today do with each primary and how many of their shared subtopics this site covers, and the
+published copy.
 That last line reads "not checked" until step 9 has run. Never tell the user the project ranks
 better, or will: say what was measured, and that the position can only be measured once the
 changes are public.
@@ -340,12 +368,19 @@ the end of step 8 when the site has a live address.
 3. It prints one row per search: before, after and a result, on the engine the research used
    (DuckDuckGo or Bing, never presented as Google). "too early to tell" means the position has
    not moved and the index has had under 14 days: run it again later.
-4. Google's own numbers, when the user has Search Console: ask for two CSV exports of the
-   Performance report, Queries tab, without "Compare". One period ends before the changes went
-   public, the other starts that day or later, 28 days each when possible. Read them with
-   `eco.py gsc <file> --stage before --period START..END` and `--stage after`. A phrase with
-   under 10 impressions comes out as "not enough data", in either direction.
-5. Run `eco.py report --lang <code>` again so the page shows the rows. If the pages changed
+4. Google's own numbers, when the user has Search Console: ask for a CSV export of the
+   Performance report, Queries tab, without "Compare", for a period that starts the day the
+   changes went public or later, 28 days when possible, and read it with
+   `eco.py gsc <file> --stage after --period START..END`. The export of step 2 is the "before";
+   when there was none, ask for one that ends before the changes went public and pass it with
+   `--stage before`. A phrase with under 10 impressions comes out as "not enough data", in either
+   direction. Each phrase with enough impressions in both periods also gets a click-rate row:
+   that is the measure of the title and meta description, and it needs 100 impressions on each
+   side to count. A click rate also rises with the position, so give both rows together.
+5. Field data, when step 1 took a baseline: 28 days after the changes went public,
+   `eco.py field --stage after`. Before that it refuses, because the average would still hold
+   visits to the old pages.
+6. Run `eco.py report --lang <code>` again so the page shows the rows. If the pages changed
    since the final audit the report refuses, and `.eco/site/track.md` is what you show.
 
 Give the user the rows as printed, the worse ones too, and say that each move is measured while

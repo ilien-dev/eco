@@ -42,6 +42,20 @@ returns nothing.
 - Suggest says that people type a phrase, never how many. If the user has Google Search Console,
   Google Trends or another volume source, record it as evidence (`search-console`, `trends`).
 
+## Search Console (a site only)
+
+`eco.py gsc <file> --stage research` reads an export of the Queries tab before the map. It is
+the only research here with Google's own counts, so it outranks Suggest when the two disagree.
+
+- Average position 5 to 20 with impressions: Google already matches the site to that search and
+  few people scroll that far. These move with on-page work more than any other group; weigh them
+  first as primaries. Check that the site really answers the search before taking one.
+- Position 1 to 4: already won. Do not rewrite the words that carry them; `claim` and placement
+  rules still apply to anything new around them.
+- Past 20, or a handful of impressions: wording evidence at most, like a competitor phrase.
+- A new site, or one with no impressions, has an empty export: the research rests on Suggest.
+- A query that is the project's own name tells nothing about demand for what it does.
+
 ## GitHub search
 
 - `github parse` records where the project ranks today in each search (`own_rank`); the report
@@ -65,6 +79,11 @@ returns nothing.
 - From `competitors.json`, look at three things: the words in their titles and H1s, the
   phrases two or more of them share (that vocabulary is expected for the query), and what none of
   them says that the project can truthfully claim (that is where it can stand out).
+- `shared_topics` are subtopics: a phrase that is a heading in one competitor and in the text of
+  at least two. `eco.py competitors` prints the ones the project's own pages never mention. A
+  page that ranks usually answers what the others answer, so each is a question to ask of the
+  project: does it have a true answer? Then it earns a section, a paragraph or an FAQ entry.
+  If it does not, leave it out; the report counts the covered ones and requires none.
 
 ## When to stop
 

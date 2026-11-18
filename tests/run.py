@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import io
 import json
+import os
 import re
 import shutil
 import sys
@@ -56,6 +57,9 @@ HTML = """<!doctype html><html lang="en"><head><title>Widget</title>
 </head><body><h1>Widget</h1><p>Hello.</p><div hidden>github readme banner</div><script>var x = "github readme banner";</script></body></html>"""
 
 
+ES_CANON = ('rel="canonical" href="https://widget.dev/"', 'rel="canonical" href="https://widget.dev/es/"')
+
+
 def payload(q, items):
     return json.dumps([q, items, [], {}])
 
@@ -88,6 +92,119 @@ def main() -> None:
           eco.own_rank_in(['https://a.dev/x', 'https://www.widget.dev/es/', 'https://github.com/me/widget/tree/main'], [('host', 'widget.dev')]) == 2
           and eco.own_rank_in(['https://github.com/me/widget-two', 'https://github.com/Me/Widget#readme'], [('repo', 'github.com/me/widget')]) == 2
           and eco.own_rank_in(['https://a.dev'], [('host', 'widget.dev')]) is None)
+    # --- readings taken outside the search results: GitHub traffic, Chrome field data
+    tr = eco.parse_traffic([{'referrer': 'Google', 'count': 30, 'uniques': 12}, {'referrer': 'github.com', 'count': 9, 'uniques': 5},
+                            {'referrer': 'duckduckgo.com', 'count': 4, 'uniques': 3}, {'referrer': 'news.ycombinator.com', 'count': 50, 'uniques': 40}],
+                           {'count': 300, 'uniques': 80, 'views': []})
+    check('GitHub traffic: search engines, github.com and everyone', (tr['search'], tr['github'], tr['all']) == (15, 5, 80), str(tr))
+    try:
+        eco.parse_traffic({'message': 'Must have push access to repository'}, {})
+        refused = ''
+    except ValueError as e:
+        refused = str(e)
+    check('a GitHub error answer is not a traffic reading', 'push access' in refused, refused)
+    crux = {'record': {'key': {'url': 'https://widget.dev/', 'formFactor': 'PHONE'}, 'metrics': {
+        'largest_contentful_paint': {'percentiles': {'p75': 2100}}, 'interaction_to_next_paint': {'percentiles': {'p75': 350}},
+        'cumulative_layout_shift': {'percentiles': {'p75': '0.05'}}}}}
+    check('a Chrome UX Report record gives the 75th percentiles of the page',
+          eco.parse_field(crux) == ({'LCP': 2100.0, 'INP': 350.0, 'CLS': 0.05}, 'url'), str(eco.parse_field(crux)))
+    psi = {'loadingExperience': {'origin_fallback': True, 'metrics': {'CUMULATIVE_LAYOUT_SHIFT_SCORE': {'percentile': 12},
+                                                                      'LARGEST_CONTENTFUL_PAINT_MS': {'percentile': 4100}}}}
+    check('a PageSpeed answer is read too, and says when it is about the whole site',
+          eco.parse_field(psi) == ({'LCP': 4100.0, 'CLS': 0.12}, 'origin') and eco.parse_field({}) == ({}, 'url'), str(eco.parse_field(psi)))
+    check("field numbers are judged by Google's limits",
+          [eco.field_cat(*a) for a in (('LCP', 2500), ('LCP', 2600), ('INP', 501), ('CLS', 0.1))] == ['good', 'needs improvement', 'poor', 'good']
+          and eco.field_fmt('LCP', 2100) == '2.1 s' and eco.field_fmt('INP', 350) == '350 ms' and eco.field_fmt('CLS', 0.05) == '0.05')
+    # --- subtopics the competitor pages share
+    cp = {'a': {'h1': ['Banner maker'], 'h2': ['Dark mode support', 'Privacy policy'], 'h3': [],
+                'text': eco.flat('Banner maker. Dark mode support for every banner. Privacy policy.')},
+          'b': {'h1': ['Another'], 'h2': ['Pricing'], 'h3': ['Export formats'],
+                'text': eco.flat('Another tool with dark mode support and several export formats. Privacy policy.')},
+          'c': {'h1': ['Third'], 'h2': [], 'h3': [], 'text': eco.flat('Third tool. Export formats: svg and png.')}}
+    st_ = eco.shared_topics(cp)
+    check('a subtopic is a heading of one competitor that two of them write about',
+          ['dark mode support', 2] in st_ and ['export formats', 2] in st_, str(st_))
+    check('page furniture and a phrase inside a longer one are not subtopics',
+          not any(g in ('privacy policy', 'dark mode', 'mode support', 'banner maker') for g, _ in st_), str(st_))
+    pr = eco.proof_data({'keywords': []}, {'pages': {}, 'shared_topics': [['a b', 2], ['c d', 2]]},
+                        {'placements': [], 'topics': {'total': 2, 'covered': []}}, {'placements': [], 'topics': {'total': 2, 'covered': ['a b']}})
+    check('the proof counts the shared subtopics before and after',
+          pr['topics'] == {'total': 2, 'before': 0, 'after': 1, 'missing': ['c d']}, str(pr['topics']))
+    # --- the links between the pages of a build
+    check('one name per page, however its address is written',
+          [eco.build_key(x) for x in ('index.html', '/es/', 'es/index.html', '/about.html', '/about')] == ['', 'es', 'es', 'about', 'about'])
+    check('a link is internal by its host, and resolved from the page it is on',
+          eco.internal_path('../x/', 'docs/a/index.html', 'w.dev') == '/docs/x/' and eco.internal_path('https://w.dev/y', 'index.html', 'w.dev') == '/y'
+          and eco.internal_path('https://other.dev/y', 'index.html', 'w.dev') is None and eco.internal_path('mailto:a@b.c', 'index.html', 'w.dev') is None
+          and eco.internal_path('#top', 'index.html', 'w.dev') is None)
+    tmp = Path(tempfile.mkdtemp(prefix='eco-links-'))
+    try:
+        canon = '<link rel="canonical" href="https://w.dev{}">'
+        write(tmp / 'dist' / 'index.html', f'<html><head>{canon.format("/")}</head><body><a href="/about">About</a> <a href="gone/">Gone</a> '
+              '<a href="/logo.svg">Logo</a> <a href="https://other.dev/">Out</a></body></html>')
+        write(tmp / 'dist' / 'logo.svg', '<svg/>')
+        write(tmp / 'dist' / 'about.html', f'<html><head>{canon.format("/")}</head><body><a href="/">Home</a></body></html>')
+        write(tmp / 'dist' / 'orphan' / 'index.html', f'<html><head>{canon.format("/orphan/")}</head><body>Alone.</body></html>')
+        write(tmp / 'dist' / 'moved.html', '<html><head><meta http-equiv="refresh" content="0; url=/about"></head><body><a href="/">Home</a></body></html>')
+        surf = [{'path': f'dist/{n}'} for n in ('index.html', 'about.html', 'orphan/index.html', 'moved.html')]
+        lf, ln = eco.link_checks(tmp, tmp / 'dist', 'https://w.dev', surf)
+        check('a page no other page links to is flagged; the home page and a linked page are not',
+              len([f for f in lf if 'no other page of the build links to it' in f]) == 2 and any(f.startswith('dist/orphan/index.html') for f in lf)
+              and not any(f.startswith(('dist/index.html: no other', 'dist/about.html: no other')) for f in lf), str(lf))
+        check('a canonical that names another page of the site is flagged',
+              any(f.startswith('dist/about.html: its canonical names another page (https://w.dev/)') for f in lf)
+              and not any('orphan/index.html: its canonical' in f or 'dist/index.html: its canonical' in f for f in lf), str(lf))
+        check('a meta refresh is flagged', any(f.startswith('dist/moved.html: a meta refresh') for f in lf), str(lf))
+        check('a link to a page the build lacks is noted, a file that exists is not',
+              any(n.startswith('dist/index.html links to 1 address(es)') and '/gone/' in n for n in ln) and not any('logo.svg' in n for n in ln), str(ln))
+        shutil.rmtree(tmp / 'dist')
+        write(tmp / 'dist' / 'index.html', '<html><body>Home</body></html>')
+        write(tmp / 'dist' / 'app' / 'index.html', '<html><body>App</body></html>')
+        lf, ln = eco.link_checks(tmp, tmp / 'dist', 'https://w.dev', [{'path': 'dist/app/index.html'}])
+        check('a build with no link at all draws its menu in the browser: noted, not flagged',
+              not lf and any('no other page of the build links to it' in n for n in ln), str((lf, ln)))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # --- a phrase belongs to a page: two pages of one language do not share a primary
+    tmp = Path(tempfile.mkdtemp(prefix='eco-pages-'))
+    saved_research = eco.check_research
+    eco.check_research = lambda a: []
+    try:
+        for n, title in (('a', 'Widget'), ('b', 'Widget pricing and plans')):
+            write(tmp / 'dist' / f'{n}.html', f'<html lang="en"><head><title>{title}</title></head><body><h1>{title}</h1><p>Text.</p></body></html>')
+        run(tmp, 'init', '--lang', 'en', '--surface', 'dist/a.html:en', '--surface', 'dist/b.html:en', mode='site')
+        kwp = tmp / '.eco' / 'site' / 'keywords.json'
+        kw = {'phrase': 'readme banner', 'lang': 'en', 'tier': 'primary', 'placements': ['title', 'h1'],
+              'evidence': [{'source': 'suggest', 'detail': 'x'}]}
+        kwp.write_text(json.dumps({'keywords': [kw]}), encoding='utf-8')
+        code, out = run(tmp, 'map', mode='site')
+        check('with two pages in a language, the map asks which page a phrase belongs to', code == 1 and 'say which one the phrase belongs to' in out, out)
+        kwp.write_text(json.dumps({'keywords': [dict(kw, surfaces=['dist/a.html', 'dist/b.html'])]}), encoding='utf-8')
+        code, out = run(tmp, 'map', mode='site')
+        check('a primary on two pages is refused: they would compete for one search', code == 1 and 'a primary belongs to one page' in out, out)
+        kwp.write_text(json.dumps({'keywords': [dict(kw, surfaces=['dist/zzz.html'])]}), encoding='utf-8')
+        code, out = run(tmp, 'map', mode='site')
+        check('a page that is not in the brief is refused', code == 1 and 'surfaces must list pages of the brief' in out, out)
+        one = {'keywords': [dict(kw, surfaces=['dist/a.html'])]}
+        kwp.write_text(json.dumps(one), encoding='utf-8')
+        code, out = run(tmp, 'map', mode='site')
+        check('a primary with its one page passes that check', 'belongs to' not in out and 'surfaces must' not in out, out)
+        check('moving a phrase to another page changes the map',
+              eco.map_hash(one) != eco.map_hash({'keywords': [dict(kw, surfaces=['dist/b.html'])]}) and eco.map_hash({'keywords': [kw]}) == eco.map_hash({'keywords': [dict(kw)]}))
+        bp = tmp / '.eco' / 'site' / 'brief.json'
+        bj = json.loads(bp.read_text(encoding='utf-8'))
+        bj.update(site_url='https://w.dev', build_dir='dist')
+        bp.write_text(json.dumps(bj), encoding='utf-8')
+        write(tmp / '.eco' / 'site' / 'competitors.json', json.dumps({'pages': {}, 'shared_topics': [['pricing and plans', 2], ['export formats', 2]]}))
+        code, out = run(tmp, 'audit', mode='site')
+        check('the audit asks for a phrase only on its own page',
+              "'readme banner' in title of dist/a.html" in out and 'of dist/b.html' not in out, out)
+        aud = eco.audit_pages(eco.argparse.Namespace(root=str(tmp), mode='site'),
+                              {'dist/b.html': ({'kind': 'html', 'lang': 'en'}, eco.parse_html((tmp / 'dist' / 'b.html').read_text(encoding='utf-8')), 'h')}, None, one)
+        check('the audit records which shared subtopics the pages cover', aud['topics'] == {'total': 2, 'covered': ['pricing and plans']}, str(aud.get('topics')))
+    finally:
+        eco.check_research = saved_research
+        shutil.rmtree(tmp, ignore_errors=True)
     # --- parsers and matching
     r = eco.parse_readme(README)
     check('readme h1', r['h1'] == ['Widget'], str(r['h1']))
@@ -392,6 +509,18 @@ def main() -> None:
             srv.server_close()
         # After publishing: the same searches again, compared with what the research saved.
         check('report.html says it was not checked on GitHub', 'We could not check it on GitHub.' in page_html, page_html[-600:])
+        code, out = run(tmp, 'traffic', '--stage', 'before')
+        check('traffic says which two GitHub answers to save', code == 2 and 'gh api repos/me/widget/traffic/popular/referrers > .eco/readme/raw/traffic/before/referrers.json' in out
+              and 'gh api repos/me/widget/traffic/views' in out, out)
+        tfd = tmp / '.eco' / 'readme' / 'raw' / 'traffic'
+        write(tfd / 'before' / 'referrers.json', json.dumps([{'referrer': 'Google', 'count': 9, 'uniques': 4}, {'referrer': 'github.com', 'count': 20, 'uniques': 10}]))
+        write(tfd / 'before' / 'views.json', json.dumps({'count': 90, 'uniques': 30, 'views': []}))
+        code, out = run(tmp, 'traffic', '--stage', 'before')
+        check('the visitors of the days before publishing are recorded', code == 0 and '30 unique visitors in 14 days; 4 from search engines, 10 from github.com' in out, out)
+        code, out = run(tmp, 'traffic', '--stage', 'after')
+        check('an "after" reading waits for track to see the new README live', code == 2 and 'track parse' in out, out)
+        code, out = run(tmp, 'traffic', '--stage', 'before', mode='site')
+        check('GitHub traffic is for a README, not a site', code == 2 and 'only --mode readme' in out, out)
         code, out = run(tmp, 'track', 'urls')
         check('track urls repeats the searches of the research', code == 0 and 'github/readme-banner.json  https://api.github.com/' in out
               and 'github/github-banner.json  #' in out and 'serp/en-github-readme-banner.html  https://html.duckduckgo.com' in out, out)
@@ -438,7 +567,25 @@ def main() -> None:
                   code == 0 and '| GitHub search | github-banner | #2 | #2 | no change |' in out and '2 improved, 1 no change' in out, out)
         finally:
             eco.fetch_page = saved_fetch
+        code, out = run(tmp, 'traffic', '--stage', 'before')
+        check('once the changes are public a reading is not a "before"', code == 2 and 'not a "before"' in out, out)
+        write(tfd / 'after' / 'referrers.json', json.dumps([{'referrer': 'Google', 'count': 40, 'uniques': 16}, {'referrer': 'Bing', 'count': 5, 'uniques': 3},
+                                                            {'referrer': 'github.com', 'count': 22, 'uniques': 11}]))
+        write(tfd / 'after' / 'views.json', json.dumps({'count': 150, 'uniques': 52, 'views': []}))
+        code, out = run(tmp, 'traffic', '--stage', 'after')
+        check('14 days of the new README have to pass before the visitors are compared', code == 2 and 'too early' in out, out)
+        trp = tmp / '.eco' / 'readme' / 'track.json'
+        tj = json.loads(trp.read_text(encoding='utf-8'))
+        tj['live_since'] = (today - datetime.timedelta(days=15)).isoformat()
+        trp.write_text(json.dumps(tj), encoding='utf-8')
+        code, out = run(tmp, 'traffic', '--stage', 'after')
+        check('visitors from search engines are compared before and after', code == 0
+              and '| GitHub traffic (14 days) | visitors from search engines | 4 unique visitors | 19 unique visitors | improved |' in out
+              and '| GitHub traffic (14 days) | visitors from github.com pages | 10 unique visitors | 11 unique visitors | no change |' in out
+              and 'ten largest referrers' in out, out)
         code, out = run(tmp, 'report')
+        check('report.html tells the visitors in plain words',
+              'Came from a search engine' in (tmp / '.eco' / 'readme' / 'report.html').read_text(encoding='utf-8'), out)
         tracked_html = (tmp / '.eco' / 'readme' / 'report.html').read_text(encoding='utf-8')
         check('the report carries the measured positions', code == 0 and 'On the published README (public since' in out
               and '| GitHub search | readme-banner | #2 | #1 | improved |' in out, out)
@@ -476,7 +623,7 @@ def main() -> None:
                             '<link rel="canonical" href="https://widget.dev/"><meta property="og:image" content="https://widget.dev/og.png">')
         write(tmp / 'README.md', README)
         write(tmp / 'dist' / 'index.html', page)
-        write(tmp / 'dist' / 'es' / 'index.html', page.replace('lang="en"', 'lang="es"'))
+        write(tmp / 'dist' / 'es' / 'index.html', page.replace('lang="en"', 'lang="es"').replace(*ES_CANON))
         code, out = run(tmp, 'init', '--lang', 'en', '--surface', 'README.md:en', mode='site')
         check('the site skill refuses a README', code == 2 and 'readme skill' in out, out)
         code, out = run(tmp, 'init', '--lang', 'en,es', '--surface', 'dist/index.html:en', '--surface', 'dist/es/index.html:es', mode='site')
@@ -495,6 +642,33 @@ def main() -> None:
         sp.write_text(json.dumps(sb), encoding='utf-8')
         code, out = run(tmp, 'brief', mode='site')
         check('site brief passes', code == 0, out)
+        d0 = datetime.date.today()
+        back = lambda n: (d0 - datetime.timedelta(days=n)).isoformat()  # noqa: E731
+        write(tmp / 'research.csv', 'Top queries,Clicks,Impressions,CTR,Position\nreadme banner,10,200,5%,14.2\nwidget,90,300,30%,1.4\n'
+              'banner maker,0,3,0%,12\nsvg banner,1,60,1.6%,8\nnobody,0,0,0%,50\n')
+        code, out = run(tmp, 'gsc', 'research.csv', '--stage', 'before', '--period', f'{back(40)}..{back(31)}', mode='site')
+        check('before a finished run, Search Console is read as research', code == 2 and '--stage research' in out, out)
+        code, out = run(tmp, 'gsc', 'research.csv', '--stage', 'research', '--period', f'{back(40)}..{back(31)}', mode='site')
+        near = out.split('within reach')[1].split('already in the top')[0] if 'within reach' in out else ''
+        check('the research lists the searches Google already shows the site for, within reach of the top',
+              code == 0 and '4 queries with impressions' in out and 'readme banner' in near and 'svg banner' in near
+              and 'banner maker' not in near and 'widget' not in near and near.index('readme banner') < near.index('svg banner'), out)
+        check('the queries that already rank are named, to leave their words alone', 'already in the top 4: 1: widget' in out, out)
+        corpus = eco.research_corpus(tmp / '.eco' / 'site')
+        check('search-console evidence is checked against the export once one was read',
+              eco.found_in(corpus, 'search-console', 'en', ['readme banner']) and not eco.found_in(corpus, 'search-console', 'en', ['readme header']))
+        os.environ.pop('CRUX_API_KEY', None)
+        code, out = run(tmp, 'field', '--stage', 'baseline', mode='site')
+        check('field data needs a key the user creates, and says what happens without it', code == 2 and 'CRUX_API_KEY' in out and 'lab estimates' in out, out)
+        write(tmp / 'crux.json', json.dumps({'record': {'key': {'url': 'https://widget.dev/'}, 'metrics': {
+            'largest_contentful_paint': {'percentiles': {'p75': 2100}}, 'interaction_to_next_paint': {'percentiles': {'p75': 350}},
+            'cumulative_layout_shift': {'percentiles': {'p75': '0.05'}}}}}))
+        code, out = run(tmp, 'field', '--stage', 'baseline', '--file', 'crux.json', '--path', '/nope/', mode='site')
+        check('a saved field answer names its page', code == 2 and 'one of /, /es/' in out, out)
+        code, out = run(tmp, 'field', '--stage', 'baseline', '--file', 'crux.json', mode='site')
+        check('a saved field answer is recorded as the baseline', code == 0 and '- /: LCP 2.1 s (good), INP 350 ms (needs improvement), CLS 0.05 (good)' in out, out)
+        code, out = run(tmp, 'field', '--stage', 'after', mode='site')
+        check('field data after publishing needs a finished run', code == 2 and 'finished run' in out, out)
         check('the two skills keep separate runs', (tmp / '.eco' / 'site' / 'original' / 'dist' / 'index.html').exists()
               and not (tmp / '.eco' / 'readme').exists())
 
@@ -557,7 +731,7 @@ def main() -> None:
             final_page = page.replace('content="Widget."', 'content="Widget draws a banner for your GitHub README that shows '
                                       'what the project does, ready to paste."').replace('</title>', '</title>' + alt)
             write(tmp / 'dist' / 'index.html', final_page)
-            write(tmp / 'dist' / 'es' / 'index.html', final_page.replace('<html lang="en"', '<html lang="es"'))
+            write(tmp / 'dist' / 'es' / 'index.html', final_page.replace('<html lang="en"', '<html lang="es"').replace(*ES_CANON))
             code, out = run(tmp, 'lighthouse', '--stage', 'baseline', '--url', 'http://localhost:4321', mode='site')
             check('a local baseline after edits is refused', code == 2 and 'before any edit' in out, out)
             eco.fetch_page = lambda url: page if url.endswith('/') and not url.endswith('/es/') else page.replace('<html lang="en"', '<html lang="es"')
@@ -603,6 +777,10 @@ def main() -> None:
             site_html = (tmp / '.eco' / 'site' / 'report.html').read_text(encoding='utf-8')
             check('a site not measured after publishing only says so', 'On the published site: not checked.' in out
                   and 'We could not check it on your published site.' in site_html, out)
+            check('the site report shows what real users measured, and what is outside the good range',
+                  'Field data (real Chrome users on phones' in out and 'INP 350 ms (needs improvement)' in out
+                  and 'real Chrome users measure INP 350 ms on /' in out.split('**Pending:**')[1], out)
+            check('the site report counts the Search Console queries of the research', '4 Search Console queries' in out, out)
             check('the site report.html shows Lighthouse', 'How fast and accessible it is' in site_html
                   and 'Accessibility' in site_html and 'color-contrast' in site_html, site_html[-2000:])
 
@@ -642,7 +820,43 @@ def main() -> None:
                   and '| Google (Search Console) | readme banner [en] | average position 14.2 (200 impressions, 10 clicks) | '
                       'average position 9.1 (300 impressions, 25 clicks) | improved |' in out, out)
             check('too few impressions is not a result, in either direction',
-                  '| improved: now in the results |' in out and '| not enough data |' in out and '2 improved, 0 no change, 0 worse, 1 not known yet' in out, out)
+                  '| improved: now in the results |' in out and '| not enough data |' in out and '3 improved, 0 no change, 0 worse, 1 not known yet' in out, out)
+            check('the click rate is compared where both periods have enough impressions',
+                  '| Google clicks per impression (Search Console) | readme banner [en] | 5.0% (10 clicks of 200 impressions) | '
+                  '8.3% (25 clicks of 300 impressions) | improved |' in out and out.count('| Google clicks per impression') == 1
+                  and 'rises with the position' in out, out)
+            gp = tmp / '.eco' / 'site' / 'gsc.json'
+            gj = json.loads(gp.read_text(encoding='utf-8'))
+            del gj['before'], gj['after']
+            gp.write_text(json.dumps(gj), encoding='utf-8')
+            code, out = run(tmp, 'gsc', 'after.csv', '--stage', 'after', '--period', f'{ago(0)}..{ago(0)}', mode='site')
+            check('the export the research read is the "before" when none was passed', code == 0
+                  and '| average position 14.2 (200 impressions, 10 clicks) | average position 9.1 (300 impressions, 25 clicks) | improved |' in out
+                  and f'Search Console {ago(40)}..{ago(31)} against' in out, out)
+            code, out = run(tmp, 'gsc', 'research.csv', '--stage', 'research', '--period', f'{ago(40)}..{ago(31)}', mode='site')
+            check('a finished run no longer takes research exports', code == 2 and 'the run is finished' in out, out)
+            code, out = run(tmp, 'field', '--stage', 'after', '--file', 'crux.json', mode='site')
+            check('28 days of the new pages have to pass before field data is compared', code == 2 and 'too early' in out, out)
+            saved_field = eco.FIELD_WINDOW, eco.crux_query
+            asked = []
+            better = {'record': {'key': {'url': 'x'}, 'metrics': {'largest_contentful_paint': {'percentiles': {'p75': 2050}},
+                                                                  'interaction_to_next_paint': {'percentiles': {'p75': 180}},
+                                                                  'cumulative_layout_shift': {'percentiles': {'p75': '0.05'}}}}}
+            eco.FIELD_WINDOW = 0
+            eco.crux_query = lambda body, key: asked.append(body) or (None if body.get('url', '').endswith('/es/') or 'origin' in body else better)
+            os.environ['CRUX_API_KEY'] = 'k'
+            try:
+                code, out = run(tmp, 'field', '--stage', 'after', mode='site')
+            finally:
+                eco.FIELD_WINDOW, eco.crux_query = saved_field
+                del os.environ['CRUX_API_KEY']
+            check('field data is asked per page on phones, then for the whole site', code == 0 and asked[0] == {'url': 'https://widget.dev/', 'formFactor': 'PHONE'}
+                  and {'origin': 'https://widget.dev', 'formFactor': 'PHONE'} in asked and '- /es/: Chrome has too few visits' in out, out + str(asked))
+            check('what real users measured is compared before and after',
+                  '| Chrome users (CrUX, 28 days) | INP, / | 350 ms (needs improvement) | 180 ms (good) | improved |' in out
+                  and '| Chrome users (CrUX, 28 days) | LCP, / | 2.1 s (good) | 2.0 s (good) | no change |' in out, out)
+            for f in ('field.json', 'gsc-research.json'):
+                (tmp / '.eco' / 'site' / f).unlink()
             kwp.write_text(json.dumps({'keywords': []}), encoding='utf-8')
             for f in ('gsc.json', 'track.md'):
                 (tmp / '.eco' / 'site' / f).unlink()

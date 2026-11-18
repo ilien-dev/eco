@@ -20,7 +20,12 @@ Also, for a site:
 
 - Each language at its own URL (`/`, `/es/`), with reciprocal `hreflang` links (`en`, `es`,
   `x-default`), `og:locale`, and a sitemap that lists every language version.
-- A canonical link on every page, a 404 that is `noindex`.
+- A canonical link on every page that names that same page, a 404 that is `noindex`.
+- One page per search. When the run covers several pages of one language, each phrase names its
+  page with `surfaces` in the map, and a primary names one: the page whose subject it is. Two
+  pages with the same primary in their titles split the links and the clicks between them.
+- Every page reachable by a link in the built HTML, from the navigation or from a page on a
+  related subject, with anchor text that says what the page is about rather than "click here".
 - Research each language separately and translate the copy around the keywords, not the keywords.
 
 ## README
