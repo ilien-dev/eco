@@ -22,7 +22,9 @@ Steps, in order (run `eco.py status` to see where a run stands):
   pending       record something left for the user
   report        the fixed summary, only when every check passes
   track         after publishing: repeat the saved searches and compare the project's position, before and after
-  gsc           site only: read a Search Console export of the weeks before or after publishing
+  gsc           site only: a Search Console export: for the research, or of the weeks before or after publishing
+  traffic       readme only: GitHub's 14-day visitors by referrer, before and after publishing
+  field         site only: what real Chrome users measured (CrUX), before and after publishing
 """
 from __future__ import annotations
 
@@ -43,13 +45,14 @@ import subprocess
 import sys
 import time
 import unicodedata
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 ECO = '.eco'
 
 # Research depth required before the map. Raise them for a bigger project; never lower
@@ -907,6 +910,54 @@ def ngrams(text: str, n: int) -> list[str]:
     return out
 
 
+TOPIC_TEXT_MAX = 30000          # characters of a competitor page kept to look subtopics up in
+TOPICS_MAX_SHARED = 40
+# Words of page furniture: a "subtopic" made of them is a footer or a menu, not something to write about.
+TOPIC_NOISE = set('''privacy cookie cookies terms rights reserved copyright policy login log sign signup subscribe newsletter
+menu skip toggle navigation footer contact twitter facebook linkedin youtube instagram discord follow share click read
+table contents license contributing changelog sponsor sponsors'''.split())
+
+
+def shared_topics(pages: dict) -> list:
+    """Subtopics the competitor pages have in common: a phrase that is in a heading of one page and in
+    the text of at least two. A heading shows the page gives it a section; the second page shows it is
+    expected for the search and not one author's idea."""
+    cand = set()
+    for pg in pages.values():
+        heads = ' . '.join(list(pg.get('h1', [])) + list(pg.get('h2', [])) + list(pg.get('h3', [])))
+        for n in (2, 3):
+            cand.update(g for g in ngrams(heads, n) if not set(g.split()) & TOPIC_NOISE and not g.replace(' ', '').isdigit())
+    texts = [pg.get('text', '') for pg in pages.values() if pg.get('text')]
+    found = []
+    for g in cand:
+        pat = _pattern([g])
+        c = sum(1 for t in texts if pat.search(t))
+        if c >= 2:
+            found.append((g, c))
+    found.sort(key=lambda x: (-x[1], -len(x[0].split()), x[0]))
+    kept: list = []
+    for g, c in found:      # "readme banner" adds nothing next to "github readme banner" on the same pages
+        if not any(c == c2 and contains(g2, g) for g2, c2 in kept):
+            kept.append((g, c))
+    return [[g, c] for g, c in kept[:TOPICS_MAX_SHARED]]
+
+
+def page_text(pg: dict) -> str:
+    heads = pg.get('headings_all') or (list(pg.get('h1', [])) + list(pg.get('heading', [])))
+    return ' . '.join([pg.get('title', ''), pg.get('meta', ''), ' . '.join(heads), pg.get('body', '')])
+
+
+def own_text(args) -> str:
+    """Everything the project's own pages say today, to look a competitor's subtopic up in."""
+    b = load(eco_dir(args) / 'brief.json', {})
+    out = []
+    for s in b.get('surfaces', []):
+        p = root_dir(args) / s.get('path', '')
+        if p.is_file():
+            out.append(page_text(parse_surface(p, s.get('kind', 'html'))))
+    return ' . '.join(out)
+
+
 def cmd_competitors(args):
     d = eco_dir(args)
     files = [Path(f) for f in args.files] if args.files else sorted((d / 'raw' / 'competitors').rglob('*'))
@@ -920,18 +971,27 @@ def cmd_competitors(args):
         page = parse_html(text) if kind == 'html' else parse_readme(text)
         data['pages'][f.name] = {
             'kind': kind, 'title': page.get('title', ''), 'meta': page.get('meta', ''), 'h1': page.get('h1', [])[:2],
-            'h2': (page.get('h2') or page.get('heading') or [])[:20], 'lead': page.get('lead', '')}
+            'h2': (page.get('h2') or page.get('heading') or [])[:20], 'lead': page.get('lead', ''),
+            'h3': (page.get('h3') or [])[:30],
+            'text': flat(' . '.join([page.get('title', ''), *page.get('h1', []), page.get('body', '')]))[:TOPIC_TEXT_MAX]}
     grams = Counter()
     for pg in data['pages'].values():
         strong = ' . '.join([pg['title'], pg['meta'], ' . '.join(pg['h1']), ' . '.join(pg['h2']), pg['lead']])
         for n in (2, 3):
             grams.update(set(ngrams(strong, n)))
     data['shared_phrases'] = [[g, c] for g, c in grams.most_common(80) if c >= 2]
+    data['shared_topics'] = shared_topics(data['pages'])
     save(d / 'competitors.json', data)
     print(f"{len(data['pages'])} competitor pages parsed")
     for name, pg in data['pages'].items():
         print(f"  {name}: {pg['title'][:70] or (pg['h1'][:1] or [''])[0][:70]}")
     print('  phrases shared by 2+ competitors: ' + ', '.join(f'{g} ({c})' for g, c in data['shared_phrases'][:args.top]))
+    if data['shared_topics']:
+        mine = own_text(args)
+        gap = [(g, c) for g, c in data['shared_topics'] if not contains(mine, g)]
+        print(f"  subtopics (a heading of one competitor, in the text of 2+): {len(data['shared_topics'])}; "
+              f"your pages do not mention {len(gap)}: " + ', '.join(f'{g} ({c})' for g, c in gap[:args.top]))
+        print('  cover one only where the project has a true answer; the report counts them before and after')
     mark(args, 'competitors', pages=len(data['pages']))
 
 
@@ -1272,6 +1332,7 @@ def research_corpus(d: Path) -> dict:
     sug = load(d / 'suggest.json', {'responses': {}})
     gh = load(d / 'github.json', {'repos': {}})
     comp = load(d / 'competitors.json', {'pages': {}})
+    gsr = load(d / 'gsc-research.json')
     by_lang: dict = {}
     for r in sug['responses'].values():
         # Only what the service suggested counts; the query we typed proves nothing.
@@ -1281,6 +1342,8 @@ def research_corpus(d: Path) -> dict:
         'github': [r['description'] for r in gh['repos'].values()]
                   + [t.replace('-', ' ') for r in gh['repos'].values() for t in r['topics']],
         'competitor': [x for p in comp['pages'].values() for x in [p['title'], p['meta'], p['lead'], *p['h1'], *p['h2']]],
+        # None while no export was read: the evidence is then taken on trust, as before.
+        'search-console': [r['q'] for r in gsr['rows'].values()] if gsr else None,
     }
 
 
@@ -1292,7 +1355,8 @@ def found_in(corpus: dict, source: str, lang: str, phrases) -> bool:
 def map_hash(km: dict) -> str:
     """What the text has to satisfy: phrases, tiers, placements and variants. Evidence notes and
     discard reasons can still be edited after the text without unlocking anything."""
-    return sha([{k: e.get(k) for k in ('phrase', 'lang', 'tier', 'placements', 'variants')}
+    return sha([dict({k: e.get(k) for k in ('phrase', 'lang', 'tier', 'placements', 'variants')},
+                     **({'surfaces': e['surfaces']} if e.get('surfaces') else {}))
                 for e in km.get('keywords', []) if e.get('tier') != 'discarded'])
 
 
@@ -1348,6 +1412,10 @@ def check_map(args) -> tuple[list[str], dict]:
                 if e['source'] in CHECKED_SOURCES and not found_in(corpus, e['source'], k.get('lang'), [k['phrase']] + variants):
                     errs.append(f"{tag}: evidence says {e['source']}, but the phrase is not in {rel(args)}/{e['source']}"
                                 f"{'.json' if e['source'] != 'competitor' else 's.json'}")
+                if (e['source'] == 'search-console' and corpus['search-console'] is not None
+                        and not found_in(corpus, 'search-console', k.get('lang'), [k['phrase']] + variants)):
+                    errs.append(f"{tag}: evidence says search-console, but no query of the export read with "
+                                f"`gsc --stage research` carries the phrase")
             if tier == 'primary' and not any(e['source'] in ('suggest', 'search-console', 'trends') for e in ev):
                 errs.append(f'{tag}: a primary needs demand evidence (suggest, search-console or trends); '
                             f'github and competitor show wording, not that people search it')
@@ -1355,6 +1423,19 @@ def check_map(args) -> tuple[list[str], dict]:
         unknown = [p for p in pl if p not in allowed]
         if unknown:
             errs.append(f'{tag}: unknown placements {unknown}; allowed here: {sorted(allowed)}')
+        same = [s['path'] for s in b.get('surfaces', []) if s.get('lang') == k.get('lang')]
+        named = k.get('surfaces')
+        if named is not None and (not isinstance(named, list) or not named or [p for p in named if p not in same]):
+            errs.append(f"{tag}: surfaces must list pages of the brief in [{k.get('lang')}]: {same}")
+        elif len(same) > 1 and set(pl) - GITHUB_PLACEMENTS:
+            # Without a page, the audit would ask for the phrase on every page of the language: two
+            # pages aimed at one search compete with each other for it.
+            if not named:
+                errs.append(f"{tag}: this run has {len(same)} pages in [{k.get('lang')}]; say which one the phrase "
+                            f"belongs to with \"surfaces\": [\"<path>\"]")
+            elif tier == 'primary' and len(named) > 1:
+                errs.append(f'{tag}: a primary belongs to one page; on {len(named)} pages they compete for the same '
+                            f'search. Keep it on one and give the others their own primary')
         if tier == 'primary':
             if not {'title', 'h1', 'lead', 'about'} & set(pl):
                 errs.append(f'{tag}: a primary needs one of title, h1, lead or about')
@@ -1568,6 +1649,82 @@ def sitemap_locs(build: Path, site_host: str, start: list, seen=None) -> tuple[l
     return locs, errs
 
 
+MAX_BUILD_PAGES = 3000          # past this, the links between pages are not read
+
+
+def build_key(path: str) -> str:
+    """One name per page of the build, whether it is written /es/, /es/index.html or es/index.html."""
+    return re.sub(r'(^|/)index$', '', re.sub(r'\.html?$', '', path.strip('/'))).strip('/')
+
+
+def internal_path(href: str, base: str, site_host: str) -> str | None:
+    """The path a link points to inside the site, or None for another site, an anchor or a mail link."""
+    href = _html.unescape(href.strip())
+    if not href or href.startswith('#') or re.match(r'(mailto|tel|javascript|data|sms):', href, re.I):
+        return None
+    try:
+        u = urllib.parse.urlparse(urllib.parse.urljoin('https://build.invalid/' + base, href))
+    except ValueError:
+        return None
+    if u.netloc.lower() not in ('build.invalid', site_host):
+        return None
+    return urllib.parse.unquote(u.path)
+
+
+def link_checks(root: Path, build: Path, site_url: str, surfaces: list) -> tuple[list[str], list[str]]:
+    """What the pages in scope look like from the rest of the build: a page no other page links to is
+    found late or never, a canonical that names another page hands the ranking to that page, and a link
+    to a page that is not there is a dead end. Read from the built HTML, as a crawler would."""
+    flags, notes = [], []
+    site_host = urllib.parse.urlparse(site_url).netloc.lower()
+    files = sorted(p for p in build.rglob('*') if p.suffix.lower() in ('.html', '.htm') and p.is_file())
+    if len(files) > MAX_BUILD_PAGES:
+        return flags, [f'the build has {len(files)} pages: the links between them were not read (limit {MAX_BUILD_PAGES})']
+    keys = {build_key(f.relative_to(build).as_posix()) for f in files}
+    inbound: dict = {}
+    links_of: dict = {}
+    for f in files:
+        name = f.relative_to(build).as_posix()
+        me, text = build_key(name), read_text(f)
+        hrefs = re.findall(r'<a\b[^>]*?\bhref\s*=\s*["\']([^"\']+)["\']', text, re.I)
+        alts = [m for tag in re.findall(r'<link\b[^>]*>', text, re.I) if re.search(r'\bhreflang\s*=', tag, re.I)
+                for m in re.findall(r'\bhref\s*=\s*["\']([^"\']+)["\']', tag, re.I)]
+        links_of[name] = [p for p in (internal_path(h, name, site_host) for h in hrefs) if p is not None]
+        for p in links_of[name] + [p for p in (internal_path(h, name, site_host) for h in alts) if p is not None]:
+            k = build_key(p)
+            if k != me:
+                inbound.setdefault(k, set()).add(name)
+    for s in surfaces:
+        p = root / s['path']
+        try:
+            name = p.resolve().relative_to(build.resolve()).as_posix()
+        except ValueError:
+            continue
+        if not p.is_file():
+            continue
+        text = read_text(p)
+        own = surface_url(site_url, build, p)
+        for kind, u in parse_html(text).get('urls', []):
+            target = urllib.parse.urljoin(own, u.strip())
+            if kind == 'canonical' and urllib.parse.urlparse(target).netloc.lower() == site_host and url_norm(target) != url_norm(own):
+                flags.append(f'{s["path"]}: its canonical names another page ({target}); search engines index that one '
+                             f'and drop this one. Point it at {own}')
+        if re.search(r'<meta\b[^>]*http-equiv\s*=\s*["\']?refresh', text, re.I):
+            flags.append(f'{s["path"]}: a meta refresh sends visitors and crawlers elsewhere; a page that redirects '
+                         f'does not rank for its own text')
+        key = build_key(name)
+        if key and not inbound.get(key):
+            msg = (f'{s["path"]}: no other page of the build links to it. A page nothing links to is found late or '
+                   f'never; link it from the navigation or from a page on a related subject')
+            # With no link anywhere the build draws its navigation in the browser: say it, do not block on it.
+            (flags if inbound else notes).append(msg)
+        dead = sorted({t for t in links_of.get(name, []) if build_key(t) not in keys and not (build / t.lstrip('/')).is_file()})
+        if dead:
+            notes.append(f'{s["path"]} links to {len(dead)} address(es) the build does not have: ' + ', '.join(dead[:5])
+                         + '. A redirect or a server route explains it; otherwise it is a broken link')
+    return flags, notes
+
+
 def site_checks(args, b: dict) -> tuple[list[str], list[str]]:
     """Flags (they block the report) and notes (they go to Pending) on robots.txt, the sitemap and llms.txt."""
     root = root_dir(args)
@@ -1625,7 +1782,8 @@ def site_checks(args, b: dict) -> tuple[list[str], list[str]]:
             flags.append('llms.txt does not start with an H1 (# Name), as llmstxt.org asks')
         if not re.search(r'\[[^\]]+\]\([^)]+\)', text):
             flags.append('llms.txt links no page; list the important ones as - [Title](url): note')
-    return flags, notes
+    f2, n2 = link_checks(root, build, site_url, b.get('surfaces', []))
+    return flags + f2, notes + n2
 
 
 def audit_pages(args, pages: dict, gh, km) -> dict:
@@ -1688,7 +1846,7 @@ def audit_pages(args, pages: dict, gh, km) -> dict:
                     targets.append((where, [gh['about']] if pl == 'about' else gh['topics']))
             else:
                 for path, (s, pg, _) in pages.items():
-                    if s['lang'] != k['lang']:
+                    if s['lang'] != k['lang'] or (k.get('surfaces') and path not in k['surfaces']):
                         continue
                     if (s['kind'] == 'html' and pl in HTML_PLACEMENTS) or (s['kind'] == 'readme' and pl in README_PLACEMENTS):
                         targets.append((path, field_items(pg, pl)))
@@ -1728,6 +1886,10 @@ def audit_pages(args, pages: dict, gh, km) -> dict:
     elif any(set(k.get('placements', [])) & GITHUB_PLACEMENTS for k in km.get('keywords', []) if k.get('tier') != 'discarded'):
         result['flags'].append('the map places keywords in the GitHub About or topics, but there is neither an `offsite` '
                                'proposal nor brief.github.about_file to audit them against')
+    topics = [t for t, _ in load(eco_dir(args) / 'competitors.json', {}).get('shared_topics', [])]
+    if topics:
+        text = flat(' . '.join(page_text(pg) for _, pg, _ in pages.values()))
+        result['topics'] = {'total': len(topics), 'covered': [t for t in topics if _pattern([t]).search(text)]}
     return result
 
 
@@ -2236,10 +2398,17 @@ TRACK_SETTLE = {'github': 3, 'serp': 14}    # days after publishing before "no c
 SERP_NOISE = 2                              # places a results page moves by itself between two fetches
 GSC_MIN_IMPRESSIONS = 10                    # under this, an average position is a handful of searches
 GSC_MIN_MOVE = 1.0                          # average-position change that counts
+GSC_STRIKE = (5.0, 20.0)                    # positions close enough to the top for the text to move them
+GSC_CTR_MIN_IMPRESSIONS = 100               # under this, one click moves the click rate by a point or more
+TRAFFIC_WINDOW = 14                         # days GitHub keeps in its traffic numbers
+FIELD_WINDOW = 28                           # days the Chrome UX Report averages
 IMPROVED, WORSE = ('up', 'entered'), ('down', 'left')
 VERDICTS = {'up': 'improved', 'entered': 'improved: now in the results', 'down': 'worse', 'left': 'worse: no longer in the results',
             'same': 'no change', 'out': 'still outside the results', 'early': 'too early to tell', 'thin': 'not enough data'}
-TRACK_SOURCES = {'github': 'GitHub search', 'ddg': 'DuckDuckGo', 'bing': 'Bing', 'gsc': 'Google (Search Console)'}
+TRACK_SOURCES = {'github': 'GitHub search', 'ddg': 'DuckDuckGo', 'bing': 'Bing', 'gsc': 'Google (Search Console)',
+                 'ctr': 'Google clicks per impression (Search Console)', 'traffic': 'GitHub traffic (14 days)',
+                 'field': 'Chrome users (CrUX, 28 days)'}
+TRAFFIC_ROWS = {'search': 'visitors from search engines', 'github': 'visitors from github.com pages', 'all': 'all visitors'}
 
 
 def _day(s) -> _dt.date:
@@ -2483,33 +2652,8 @@ def parse_gsc(text: str) -> dict:
     return out
 
 
-def cmd_gsc(args):
-    if args.mode != 'site':
-        die('Search Console covers a site you own, not github.com: only --mode site reads it', 2)
-    d = eco_dir(args)
-    done = state(args)['steps'].get('audit-final')
-    if not done:
-        die('no final audit yet: Search Console is read after a finished run', 2)
-    m = re.fullmatch(r'(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})', args.period or '')
-    try:
-        start, end = (_day(m.group(1)), _day(m.group(2))) if m else (None, None)
-    except ValueError:
-        start = end = None
-    if not start or end < start or end > _dt.date.today():
-        die('--period START..END with the dates of the export, e.g. 2026-01-01..2026-01-28 (it cannot end after today)', 2)
-    data = load(d / 'gsc.json', {})
-    public = _day(load(d / 'track.json', {}).get('live_since') or done['at'])
-    if args.stage == 'before' and end >= public and load(d / 'track.json', {}).get('live_since'):
-        die(f"the 'before' period ends {end}, when the changes were already public ({public}); export an earlier one", 2)
-    if args.stage == 'after' and start < public:
-        die(f"the 'after' period starts {start}, before the changes could be public ({public}); "
-            'it has to start on the day they went public or later', 2)
-    other = data.get('after' if args.stage == 'before' else 'before')
-    if other and ((args.stage == 'before' and end >= _day(other['period'][0])) or (args.stage == 'after' and start <= _day(other['period'][1]))):
-        die(f"the two periods overlap ({args.period} and {'..'.join(other['period'])})", 2)
-    p = Path(args.file)
-    rows = parse_gsc(read_text(p if p.is_absolute() else root_dir(args) / p))
-    km = load(d / 'keywords.json', {'keywords': []})
+def gsc_kept(km: dict, rows: dict) -> dict:
+    """The rows of an export that are phrases of the keyword map, a phrase and its variants added up."""
     kept = {}
     for k in km['keywords']:
         if k.get('tier') == 'discarded':
@@ -2519,6 +2663,67 @@ def cmd_gsc(args):
             imp = sum(h['impressions'] for h in hits)
             kept[k['phrase']] = {'lang': k['lang'], 'clicks': sum(h['clicks'] for h in hits), 'impressions': imp,
                                  'position': round(sum(h['position'] * h['impressions'] for h in hits) / imp, 1) if imp else hits[0]['position']}
+    return kept
+
+
+def gsc_research(args, start, end, rows: dict) -> None:
+    """An export read before the map: what Google already shows the site for, with real numbers."""
+    d = eco_dir(args)
+    if state(args)['steps'].get('audit-final'):
+        die('the run is finished: an export read now would count searches the new text already answers. '
+            "Pass it as --stage before or --stage after", 2)
+    rows = {k: r for k, r in rows.items() if r['impressions'] > 0}
+    save(d / 'gsc-research.json', {'period': [start.isoformat(), end.isoformat()], 'rows': rows})
+    near = sorted((r for r in rows.values() if GSC_STRIKE[0] <= r['position'] <= GSC_STRIKE[1]
+                   and r['impressions'] >= GSC_MIN_IMPRESSIONS), key=lambda r: -r['impressions'])
+    top = sorted((r for r in rows.values() if r['position'] < GSC_STRIKE[0] and r['impressions'] >= GSC_MIN_IMPRESSIONS),
+                 key=lambda r: -r['impressions'])
+    ok(f'{len(rows)} queries with impressions between {start} and {end}')
+    print(f'  within reach (average position {GSC_STRIKE[0]:.0f} to {GSC_STRIKE[1]:.0f}, {GSC_MIN_IMPRESSIONS}+ impressions): {len(near)}')
+    for r in near[:args.top]:
+        print(f"    {r['impressions']:>7} impressions  position {r['position']:>5}  {r['clicks']:>5} clicks  {r['q']}")
+    print(f'  already in the top {GSC_STRIKE[0] - 1:.0f}: {len(top)}' + (': ' + ', '.join(r['q'] for r in top[:8]) if top else ''))
+    print('  Google shows the site for the first group and few people reach it: those are the primaries to weigh first, '
+          'with "search-console" as evidence. Keep the words of the second group where they are. '
+          'This export is also the "before" of `gsc --stage after`: keep the file.')
+    mark(args, 'gsc-research', queries=len(rows), near=len(near))
+
+
+def cmd_gsc(args):
+    if args.mode != 'site':
+        die('Search Console covers a site you own, not github.com: only --mode site reads it', 2)
+    d = eco_dir(args)
+    done = state(args)['steps'].get('audit-final')
+    if not done and args.stage != 'research':
+        die('no final audit yet: before the map, read the export with --stage research; '
+            'the before and after stages compare a finished run', 2)
+    m = re.fullmatch(r'(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})', args.period or '')
+    try:
+        start, end = (_day(m.group(1)), _day(m.group(2))) if m else (None, None)
+    except ValueError:
+        start = end = None
+    if not start or end < start or end > _dt.date.today():
+        die('--period START..END with the dates of the export, e.g. 2026-01-01..2026-01-28 (it cannot end after today)', 2)
+    p = Path(args.file)
+    rows = parse_gsc(read_text(p if p.is_absolute() else root_dir(args) / p))
+    if args.stage == 'research':
+        return gsc_research(args, start, end, rows)
+    data = load(d / 'gsc.json', {})
+    km = load(d / 'keywords.json', {'keywords': []})
+    public = _day(load(d / 'track.json', {}).get('live_since') or done['at'])
+    gsr = load(d / 'gsc-research.json')
+    if args.stage == 'after' and 'before' not in data and gsr and _day(gsr['period'][1]) < public:
+        # The export the research read ends before the changes went public: it is the "before".
+        data['before'] = {'period': gsr['period'], 'queries': len(gsr['rows']), 'rows': gsc_kept(km, gsr['rows'])}
+    if args.stage == 'before' and end >= public and load(d / 'track.json', {}).get('live_since'):
+        die(f"the 'before' period ends {end}, when the changes were already public ({public}); export an earlier one", 2)
+    if args.stage == 'after' and start < public:
+        die(f"the 'after' period starts {start}, before the changes could be public ({public}); "
+            'it has to start on the day they went public or later', 2)
+    other = data.get('after' if args.stage == 'before' else 'before')
+    if other and ((args.stage == 'before' and end >= _day(other['period'][0])) or (args.stage == 'after' and start <= _day(other['period'][1]))):
+        die(f"the two periods overlap ({args.period} and {'..'.join(other['period'])})", 2)
+    kept = gsc_kept(km, rows)
     data[args.stage] = {'period': [start.isoformat(), end.isoformat()], 'queries': len(rows), 'rows': kept}
     save(d / 'gsc.json', data)
     ok(f"{args.stage}: {len(rows)} queries in the export, {len(kept)} of them phrases of the keyword map")
@@ -2576,6 +2781,37 @@ def track_rows(args) -> list[dict]:
                          'before': b0['position'] if b0 else None, 'after': a0['position'] if a0 else None,
                          'imp': [b0['impressions'] if b0 else 0, a0['impressions'] if a0 else 0],
                          'clicks': [b0['clicks'] if b0 else 0, a0['clicks'] if a0 else 0], 'verdict': v})
+            # The snippet (title and meta description) is written to be clicked: the click rate is its measure.
+            if b0 and a0 and min(b0['impressions'], a0['impressions']) >= GSC_MIN_IMPRESSIONS:
+                c0, c1 = (round(100 * x['clicks'] / x['impressions'], 1) for x in (b0, a0))
+                step = max(0.5, 0.2 * c0)
+                v = ('thin' if min(b0['impressions'], a0['impressions']) < GSC_CTR_MIN_IMPRESSIONS
+                     else 'up' if c1 - c0 >= step else 'down' if c0 - c1 >= step else 'same')
+                rows.append({'source': 'ctr', 'q': phrase, 'lang': a0['lang'], 'before': c0, 'after': c1,
+                             'imp': [b0['impressions'], a0['impressions']], 'clicks': [b0['clicks'], a0['clicks']], 'verdict': v})
+    t = load(d / 'traffic.json', {})
+    if 'before' in t and 'after' in t:
+        for key in TRAFFIC_ROWS:
+            b0, a0 = t['before'][key], t['after'][key]
+            step = max(3, 0.2 * b0)     # a handful of visits either way is an ordinary fortnight
+            rows.append({'source': 'traffic', 'q': key, 'lang': '', 'before': b0, 'after': a0,
+                         'verdict': 'up' if a0 - b0 >= step else 'down' if b0 - a0 >= step else 'same'})
+    f = load(d / 'field.json', {})
+    if 'baseline' in f and 'after' in f:
+        seen = set()
+        for path, a0 in f['after']['pages'].items():
+            b0 = f['baseline']['pages'].get(path)
+            if not a0 or not b0 or a0['scope'] != b0['scope']:
+                continue
+            where = 'whole site' if a0['scope'] == 'origin' else path
+            for metric in FIELD_GOOD:
+                v0, v1 = b0['metrics'].get(metric), a0['metrics'].get(metric)
+                if v0 is None or v1 is None or (metric, where) in seen:
+                    continue
+                seen.add((metric, where))
+                step = max(0.1 * v0, 0.01 if metric == 'CLS' else 50)
+                rows.append({'source': 'field', 'q': f'{metric}, {where}', 'lang': '', 'metric': metric, 'before': v0, 'after': v1,
+                             'verdict': 'up' if v0 - v1 >= step else 'down' if v1 - v0 >= step else 'same'})
     return rows
 
 
@@ -2589,8 +2825,11 @@ def track_when(args) -> dict:
     d = eco_dir(args)
     tr = load(d / 'track.json', {'live_since': None, 'snapshots': []})
     g = load(d / 'gsc.json', {})
+    t, f = load(d / 'traffic.json', {}), load(d / 'field.json', {})
     return {'live_since': tr.get('live_since'), 'measured': tr['snapshots'][-1]['at'] if tr['snapshots'] else None,
-            'gsc': ['..'.join(g[s]['period']) for s in ('before', 'after')] if 'before' in g and 'after' in g else None}
+            'gsc': ['..'.join(g[s]['period']) for s in ('before', 'after')] if 'before' in g and 'after' in g else None,
+            'traffic': [t[s]['at'] for s in ('before', 'after')] if 'before' in t and 'after' in t else None,
+            'field': [f[s]['at'] for s in ('baseline', 'after')] if 'baseline' in f and 'after' in f else None}
 
 
 def track_cell(r: dict, key: str) -> str:
@@ -2598,6 +2837,13 @@ def track_cell(r: dict, key: str) -> str:
     if r['source'] == 'gsc':
         i = 0 if key == 'before' else 1
         return 'no impressions' if v is None else f"average position {v} ({r['imp'][i]} impressions, {r['clicks'][i]} clicks)"
+    if r['source'] == 'ctr':
+        i = 0 if key == 'before' else 1
+        return f"{v}% ({r['clicks'][i]} clicks of {r['imp'][i]} impressions)"
+    if r['source'] == 'traffic':
+        return f'{v} unique visitors'
+    if r['source'] == 'field':
+        return f"{field_fmt(r['metric'], v)} ({field_cat(r['metric'], v)})"
     return f'#{v}' if v else f"not in the first {r['depth']}"
 
 
@@ -2608,14 +2854,241 @@ def track_lines(args, rows) -> list[str]:
         return [f'- On the published {what}: not checked.']
     n, w = track_summary(rows), track_when(args)
     dates = '; '.join(x for x in (f"public since {w['live_since']}, searches repeated {w['measured']}" if w['measured'] else '',
-                                  f"Search Console {w['gsc'][0]} against {w['gsc'][1]}" if w['gsc'] else '') if x)
+                                  f"Search Console {w['gsc'][0]} against {w['gsc'][1]}" if w['gsc'] else '',
+                                  f"GitHub traffic read {w['traffic'][0]} and {w['traffic'][1]}" if w['traffic'] else '',
+                                  f"field data read {w['field'][0]} and {w['field'][1]}" if w['field'] else '') if x)
     out = [f"- On the published {what} ({dates}): {n['improved']} improved, {n['same']} no change, {n['worse']} worse, "
            f"{n['unknown']} not known yet.", '',
            '| Where | Search | Before | After | Result |', '|---|---|---|---|---|']
     for r in rows:
-        out.append(f"| {TRACK_SOURCES[r['source']]} | {r['q']}{' [' + r['lang'] + ']' if r['lang'] else ''} | {track_cell(r, 'before')} | "
+        q = TRAFFIC_ROWS[r['q']] if r['source'] == 'traffic' else r['q']
+        out.append(f"| {TRACK_SOURCES[r['source']]} | {q}{' [' + r['lang'] + ']' if r['lang'] else ''} | {track_cell(r, 'before')} | "
                    f"{track_cell(r, 'after')} | {VERDICTS[r['verdict']]} |")
     out += ['', 'The positions are measured. That the edits caused each move is not proven: other pages and repositories change too.']
+    if any(r['source'] == 'ctr' for r in rows):
+        out.append('A click rate rises with the position as well as with a better title and description: read both rows together.')
+    if any(r['source'] == 'traffic' for r in rows):
+        out.append('GitHub lists its ten largest referrers only: a source missing from one reading counts as zero there.')
+    return out
+
+
+# ---------------------------------------------------------------- traffic: who reaches the repository (README)
+
+SEARCH_REFERRERS = ('google', 'bing', 'duckduckgo', 'yahoo', 'yandex', 'baidu', 'brave', 'ecosia', 'kagi', 'startpage',
+                    'perplexity', 'chatgpt')
+
+
+def parse_traffic(referrers, views) -> dict:
+    """GitHub's two traffic answers (`traffic/popular/referrers` and `traffic/views`) as the three numbers a
+    run compares: unique visitors from search engines, from github.com pages, and in all."""
+    for obj in (referrers, views):
+        if isinstance(obj, dict) and obj.get('message'):
+            raise ValueError(f"GitHub answered: {obj['message']} (traffic needs push access to the repository)")
+    if not isinstance(referrers, list) or not isinstance(views, dict) or 'uniques' not in views:
+        raise ValueError('not the answers of traffic/popular/referrers (a list) and traffic/views (count, uniques)')
+    refs = {str(r.get('referrer', '')): int(r.get('uniques') or 0) for r in referrers if isinstance(r, dict)}
+    return {'all': int(views['uniques']), 'views': int(views.get('count') or 0), 'referrers': refs,
+            'search': sum(u for n, u in refs.items() if any(s in n.lower() for s in SEARCH_REFERRERS)),
+            'github': sum(u for n, u in refs.items() if n.lower() == 'github.com')}
+
+
+def cmd_traffic(args):
+    if args.mode != 'readme':
+        die('GitHub traffic is about a repository: only --mode readme reads it. For a site, use `eco.py gsc`', 2)
+    d = eco_dir(args)
+    repo = str((load(d / 'brief.json', {}).get('github') or {}).get('repo') or '').strip('/')
+    if not repo:
+        die('the brief has no GitHub repository, so there is no traffic to read', 2)
+    today = _dt.date.today()
+    live = load(d / 'track.json', {}).get('live_since')
+    data = load(d / 'traffic.json', {})
+    if args.stage == 'before' and live:
+        die(f'the changes are public since {live}: a reading taken now is not a "before". '
+            'It has to be saved before the changes are merged', 2)
+    if args.stage == 'after':
+        if 'before' not in data:
+            die('no "before" reading: without the visitors of the days before publishing there is nothing to compare', 2)
+        if not live:
+            die('run `eco.py track parse` first: it confirms GitHub shows the new README and records the day', 2)
+        ready = _day(live) + _dt.timedelta(days=TRAFFIC_WINDOW)
+        if today < ready:
+            die(f"too early: GitHub adds up the last {TRAFFIC_WINDOW} days, and until {ready} they still hold days of the "
+                'old README. Read it again on that day or later', 2)
+    folder = d / 'raw' / 'traffic' / args.stage
+    rf, vf = folder / 'referrers.json', folder / 'views.json'
+    if not rf.exists() or not vf.exists():
+        folder.mkdir(parents=True, exist_ok=True)
+        base = f'{rel(args)}/raw/traffic/{args.stage}'
+        print(f'save GitHub\'s two answers, then run this again:\n'
+              f'  gh api repos/{repo}/traffic/popular/referrers > {base}/referrers.json\n'
+              f'  gh api repos/{repo}/traffic/views > {base}/views.json')
+        sys.exit(2)
+    try:
+        got = parse_traffic(json.loads(read_text(rf).lstrip('\ufeff')), json.loads(read_text(vf).lstrip('\ufeff')))
+    except ValueError as e:
+        die(str(e), 2)
+    data[args.stage] = dict(got, at=today.isoformat())
+    save(d / 'traffic.json', data)
+    ok(f"{args.stage}: {got['all']} unique visitors in {TRAFFIC_WINDOW} days; {got['search']} from search engines, "
+       f"{got['github']} from github.com pages")
+    if 'before' in data and 'after' in data:
+        text = '\n'.join(track_lines(args, track_rows(args))) + '\n'
+        (d / 'track.md').write_text(text, encoding='utf-8')
+        print(text)
+    else:
+        print(f'  the "after" reading comes {TRAFFIC_WINDOW} days after the changes are public, in step 8')
+    mark(args, f'traffic-{args.stage}', visitors=got['all'])
+
+
+# ---------------------------------------------------------------- field data: what real Chrome users measured (site)
+
+# Google's "good" and "poor" limits for the 75th percentile. Lighthouse estimates LCP and CLS in a lab and has
+# no INP at all; these are the numbers of the people who opened the page, the ones Google's page experience uses.
+FIELD_GOOD = {'LCP': (2500, 4000), 'INP': (200, 500), 'CLS': (0.1, 0.25)}
+FIELD_NAMES = {'LCP': ('largest_contentful_paint', 'LARGEST_CONTENTFUL_PAINT_MS'),
+               'INP': ('interaction_to_next_paint', 'INTERACTION_TO_NEXT_PAINT'),
+               'CLS': ('cumulative_layout_shift', 'CUMULATIVE_LAYOUT_SHIFT_SCORE')}
+CRUX_URL = 'https://chromeuxreport.googleapis.com/v1/records:queryRecord'
+
+
+def field_cat(metric: str, v: float) -> str:
+    good, poor = FIELD_GOOD[metric]
+    return 'good' if v <= good else 'poor' if v > poor else 'needs improvement'
+
+
+def field_fmt(metric: str, v: float) -> str:
+    if metric == 'CLS':
+        return f'{v:.2f}'
+    return f'{v / 1000:.1f} s' if v >= 1000 else f'{v:.0f} ms'
+
+
+def parse_field(obj) -> tuple[dict, str]:
+    """The 75th percentiles of a Chrome UX Report answer, and whether they describe the page ('url') or
+    the whole site ('origin'). Reads the CrUX API shape and the field block of a PageSpeed Insights answer."""
+    obj = obj if isinstance(obj, dict) else {}
+    out = {}
+    rec = obj.get('record')
+    if isinstance(rec, dict):
+        for k, (name, _) in FIELD_NAMES.items():
+            p = (((rec.get('metrics') or {}).get(name) or {}).get('percentiles') or {}).get('p75')
+            if p is not None:
+                out[k] = float(p)
+        return out, 'origin' if 'origin' in (rec.get('key') or {}) else 'url'
+    for block, scope in (('loadingExperience', 'url'), ('originLoadingExperience', 'origin')):
+        le = obj.get(block) or {}
+        for k, (_, name) in FIELD_NAMES.items():
+            p = ((le.get('metrics') or {}).get(name) or {}).get('percentile')
+            if p is not None:
+                out[k] = float(p) / 100 if k == 'CLS' else float(p)     # PageSpeed gives CLS times 100
+        if out:
+            return out, 'origin' if le.get('origin_fallback') else scope
+    return out, 'url'
+
+
+def crux_query(body: dict, key: str) -> dict | None:
+    """One Chrome UX Report record, or None when Chrome has too few visits to publish one. Kept small so
+    tests can replace it."""
+    req = urllib.request.Request(CRUX_URL + '?key=' + urllib.parse.quote(key), data=json.dumps(body).encode('utf-8'),
+                                 headers={'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise OSError(f'the Chrome UX Report API answered {e.code}') from None
+
+
+def cmd_field(args):
+    if args.mode != 'site':
+        die('field data is about a website: only --mode site reads it', 2)
+    d = eco_dir(args)
+    b = load(d / 'brief.json', {})
+    site_url = str(b.get('site_url') or '')
+    if not site_url or not b.get('build_dir'):
+        die('the brief needs site_url and build_dir first', 2)
+    root, build = root_dir(args), root_dir(args) / b['build_dir']
+    today = _dt.date.today()
+    done = state(args)['steps'].get('audit-final')
+    live = load(d / 'track.json', {}).get('live_since')
+    data = load(d / 'field.json', {})
+    if args.stage == 'baseline' and live:
+        die(f'the changes are public since {live}: a reading taken now is not a baseline', 2)
+    if args.stage == 'after':
+        if 'baseline' not in data or not done:
+            die('the "after" reading compares a finished run with its baseline: read `--stage baseline` in step 1', 2)
+        ready = _day(live or done['at']) + _dt.timedelta(days=FIELD_WINDOW)
+        if today < ready:
+            die(f'too early: the Chrome UX Report averages {FIELD_WINDOW} days, and until {ready} they still hold visits '
+                'to the old pages. Read it again on that day or later', 2)
+    paths = {urllib.parse.urlparse(surface_url(site_url, build, root / s['path'])).path or '/': s for s in b.get('surfaces', [])}
+    pages = dict((data.get(args.stage) or {}).get('pages') or {}) if args.file else {}
+    if args.file:
+        if args.path not in paths:
+            die(f'--path says which page the saved answer is about: one of {", ".join(paths)}', 2)
+        p = Path(args.file)
+        try:
+            metrics, scope = parse_field(json.loads(read_text(p if p.is_absolute() else root / p).lstrip('\ufeff')))
+        except ValueError as e:
+            die(f'{args.file} is not JSON: {e}', 2)
+        pages[args.path] = {'scope': scope, 'metrics': metrics} if metrics else None
+    else:
+        key = os.environ.get('CRUX_API_KEY', '').strip()
+        if not key:
+            die('no CRUX_API_KEY in the environment. The Chrome UX Report API is free and needs a Google API key '
+                '(console.cloud.google.com, enable "Chrome UX Report API"); the user creates it, never you. Without it '
+                'this step is skipped and the report says the speed numbers are lab estimates only', 2)
+        origin = '{0.scheme}://{0.netloc}'.format(urllib.parse.urlparse(site_url))
+        for path in paths:
+            try:
+                rec = crux_query({'url': origin + path, 'formFactor': 'PHONE'}, key) or crux_query({'origin': origin, 'formFactor': 'PHONE'}, key)
+            except (OSError, ValueError) as e:
+                die(f'could not read the Chrome UX Report: {e}', 2)
+            metrics, scope = parse_field(rec)
+            pages[path] = {'scope': scope, 'metrics': metrics} if metrics else None
+    data[args.stage] = {'at': today.isoformat(), 'pages': pages}
+    save(d / 'field.json', data)
+    for line in field_lines(data, args.stage):
+        print(line)
+    if 'baseline' in data and 'after' in data:
+        text = '\n'.join(track_lines(args, track_rows(args))) + '\n'
+        (d / 'track.md').write_text(text, encoding='utf-8')
+        print(text)
+    mark(args, f'field-{args.stage}', pages=sum(1 for v in pages.values() if v))
+
+
+def field_lines(data: dict, stage: str | None = None) -> list[str]:
+    """The field numbers of one reading, a line per page; the whole-site numbers once."""
+    stage = stage or ('after' if 'after' in data else 'baseline' if 'baseline' in data else None)
+    if not stage:
+        return ['Field data (real Chrome users): not read. The numbers above are lab estimates.']
+    out = [f"Field data (real Chrome users on phones, {FIELD_WINDOW} days to {data[stage]['at']}, 75th percentile):"]
+    site_done = False
+    for path, pg in data[stage]['pages'].items():
+        if not pg:
+            out.append(f'- {path}: Chrome has too few visits to publish numbers for it')
+            continue
+        if pg['scope'] == 'origin':
+            if site_done:
+                continue
+            site_done = True
+        out.append(f"- {'whole site (no page has numbers of its own)' if pg['scope'] == 'origin' else path}: " + ', '.join(
+            f'{k} {field_fmt(k, v)} ({field_cat(k, v)})' for k, v in pg['metrics'].items()))
+    return out
+
+
+def field_notes(data: dict) -> list[str]:
+    """For Pending: what real users measured outside Google's "good" range."""
+    stage = 'after' if 'after' in data else 'baseline' if 'baseline' in data else None
+    out, seen = [], set()
+    for path, pg in (data[stage]['pages'].items() if stage else []):
+        for k, v in (pg or {}).get('metrics', {}).items():
+            where = 'the whole site' if pg['scope'] == 'origin' else path
+            if field_cat(k, v) != 'good' and (k, where) not in seen:
+                seen.add((k, where))
+                out.append(f'real Chrome users measure {k} {field_fmt(k, v)} on {where} ({field_cat(k, v)}; good is up to '
+                           f"{field_fmt(k, FIELD_GOOD[k][0])}). Lighthouse's lab score does not show it; it changes over "
+                           f'{FIELD_WINDOW} days of visits to the fixed pages')
     return out
 
 
@@ -2638,8 +3111,13 @@ def proof_data(km: dict, comp: dict, base: dict, final: dict) -> dict:
         key = (k['phrase'], k['lang'])
         rivals.append({'phrase': k['phrase'], 'lang': k['lang'], 'pages': n, 'of': len(pages),
                        'before': key in b_strong, 'after': key in f_strong})
+    topics = None
+    tb, tf = base.get('topics') or {}, final.get('topics') or {}
+    if tf.get('total'):
+        topics = {'total': tf['total'], 'before': len(tb.get('covered', [])), 'after': len(tf['covered']),
+                  'missing': [t for t, _ in comp.get('shared_topics', []) if t not in tf['covered']][:8]}
     return {'before': sum(1 for p in phrases if p in b_live), 'after': sum(1 for p in phrases if p in f_live),
-            'total': len(phrases), 'rivals': rivals}
+            'total': len(phrases), 'rivals': rivals, 'topics': topics}
 
 
 # ---------------------------------------------------------------- report
@@ -2729,6 +3207,8 @@ def cmd_report(args):
     sug = load(d / 'suggest.json', {'responses': {}})
     gh = load(d / 'github.json', {'repos': {}, 'searches': []})
     comp = load(d / 'competitors.json', {'pages': {}})
+    gsr = load(d / 'gsc-research.json')
+    fd = load(d / 'field.json', {}) if args.mode == 'site' else {}
     tiers = Counter(k['tier'] for k in km['keywords'])
     where: dict = {}
     longtail_hit = sum(1 for k in km['keywords'] if k['tier'] == 'long-tail'
@@ -2744,7 +3224,8 @@ def cmd_report(args):
     langs = Counter(f"{r['lang']} {r.get('engine', 'google')}" for r in sug['responses'].values())
     out.append(f"**{L['research']}:** {len(sug['responses'])} {L['queries']} ("
                + ', '.join(f'{k} {v}' for k, v in sorted(langs.items())) + ")"
-               + (f", {len(gh['repos'])} {L['repos']}" if gh['repos'] else '') + f", {len(comp['pages'])} {L['comps']}.")
+               + (f", {len(gh['repos'])} {L['repos']}" if gh['repos'] else '') + f", {len(comp['pages'])} {L['comps']}"
+               + (f", {len(gsr['rows'])} Search Console queries ({'..'.join(gsr['period'])})" if gsr else '') + '.')
     for lang in b['languages']:
         if not any(r['lang'] == lang and r.get('engine', 'google') == 'google' and r['suggestions'] for r in sug['responses'].values()):
             out.append(L['nogoogle'].format(lang=lang))
@@ -2867,6 +3348,7 @@ def cmd_report(args):
             out.append(f"- {w['audit']}" + (f" on {w['path']}" if w.get('path') else '') + f" ({w['kind']}): {w['reason']}")
         if lh['local']:
             out.append('Measured on the local build: is-on-https and redirects-http are decided by the production host.')
+        out += field_lines(fd)
         out.append('')
     out.append(f"**{L['human']}:** Quirón {L['status'].get(q['status'], q['status'])}" + (f" · {q['result']}" if q.get('result') else ''))
     out.append('')
@@ -2882,9 +3364,13 @@ def cmd_report(args):
     for r in proof['rivals']:
         yours = 'yours already did' if r['before'] and r['after'] else 'yours does now' if r['after'] else 'yours does not'
         out.append(f"- Against the {r['of']} competitor pages read: {r['pages']} carry \"{r['phrase']}\" [{r['lang']}] in the title or H1; {yours}.")
+    tp = proof['topics']
+    if tp:
+        out.append(f"- Subtopics those pages share (a heading in one, in the text of two or more): yours covered {tp['before']} of "
+                   f"{tp['total']}, now {tp['after']}." + (f" Not covered: {', '.join(tp['missing'])}." if tp['missing'] else ''))
     out += track_lines(args, rows)
     out.append('')
-    pend = list(st.get('pending', [])) + final.get('notes', []) + (lh['notes'] if lh else [])
+    pend = list(st.get('pending', [])) + final.get('notes', []) + (lh['notes'] if lh else []) + field_notes(fd)
     out.append(f"**{L['pending']}:**" + ('' if pend else f" {L['nothing']}."))
     out += [f'- {x}' for x in pend]
     out.append(f"- {L['notdone']}")
@@ -2892,6 +3378,7 @@ def cmd_report(args):
     (d / 'report.md').write_text(text, encoding='utf-8')
     lb = load(d / 'lighthouse-baseline.json') if lh else None
     R = report_data(args, b, km, sug, gh, comp, serp, base, final, integ, st, q, lh, lb, lost, main_rows)
+    R['pending'] = R['pending'] + field_notes(fd)
     R.update(proof=proof, track=rows, track_sum=track_summary(rows), track_when=track_when(args),
              own_serp=[s for s in serp['queries'].values() if 'own_rank' in s] if own_keys(b) else [])
     (d / 'report.html').write_text(render_html(R, T, page_lang), encoding='utf-8')
@@ -2962,6 +3449,11 @@ HTML_LABELS = {
         'live_caveat': 'These positions are measured. We cannot prove our changes caused each move: other pages change too.',
         'pos_out': 'not in the first {n}', 'pos_avg': 'average position {n} ({i} views)', 'pos_none': 'no views',
         'src_github': 'GitHub search', 'src_ddg': 'DuckDuckGo', 'src_bing': 'Bing', 'src_gsc': 'Google',
+        'src_ctr': 'Google: how many of those who saw it clicked', 'src_traffic': 'Visitors on GitHub, 14 days',
+        'src_field': 'Speed for real Chrome users, 28 days',
+        'cell_ctr': '{n}% clicked ({i} views)', 'cell_visitors': '{n} visitors',
+        'traffic_search': 'Came from a search engine', 'traffic_github': 'Came from another GitHub page', 'traffic_all': 'All visitors',
+        'proof_topics': 'Those pages share {t} subtopics. Yours covered {b} of them; now it covers {a}.',
         'v_up': 'Improved', 'v_entered': 'Improved: now it shows up', 'v_down': 'Worse', 'v_left': 'Worse: it no longer shows up',
         'v_same': 'No change', 'v_out': 'Still does not show up', 'v_early': 'Too early to tell', 'v_thin': 'Not enough data',
         'own_h': 'Where you showed up before the changes',
@@ -3022,6 +3514,11 @@ HTML_LABELS = {
         'live_caveat': 'Estas posiciones están medidas. No podemos demostrar que nuestros cambios causaron cada movimiento: otras páginas también cambian.',
         'pos_out': 'fuera de los {n} primeros', 'pos_avg': 'posición media {n} ({i} apariciones)', 'pos_none': 'sin apariciones',
         'src_github': 'Búsqueda de GitHub', 'src_ddg': 'DuckDuckGo', 'src_bing': 'Bing', 'src_gsc': 'Google',
+        'src_ctr': 'Google: cuántos de los que lo vieron hicieron clic', 'src_traffic': 'Visitantes en GitHub, 14 días',
+        'src_field': 'Velocidad para usuarios reales de Chrome, 28 días',
+        'cell_ctr': '{n}% hizo clic ({i} apariciones)', 'cell_visitors': '{n} visitantes',
+        'traffic_search': 'Llegaron desde un buscador', 'traffic_github': 'Llegaron desde otra página de GitHub', 'traffic_all': 'Todos los visitantes',
+        'proof_topics': 'Esas páginas comparten {t} subtemas. La tuya trataba {b}; ahora trata {a}.',
         'v_up': 'Mejoró', 'v_entered': 'Mejoró: ahora aparece', 'v_down': 'Empeoró', 'v_left': 'Empeoró: ya no aparece',
         'v_same': 'Sin cambio', 'v_out': 'Sigue sin aparecer', 'v_early': 'Demasiado pronto para saberlo', 'v_thin': 'Faltan datos',
         'own_h': 'Dónde aparecías antes de los cambios',
@@ -3372,7 +3869,9 @@ def render_html(R: dict, T: dict, lang: str) -> str:
         w(f'<div class="place">{head("search", T["proof_rivals_t"])}'
           + ''.join(f'<div class="ba">{fmt("proof_rival", n=r["pages"], t=r["of"], p=r["phrase"])} <b>'
                     f'{E(T["rival_keep"] if r["before"] and r["after"] else T["rival_gain"] if r["after"] else T["rival_miss"])}</b></div>'
-                    for r in pr['rivals']) + '</div>')
+                    for r in pr['rivals'])
+          + (f'<div class="ba">{fmt("proof_topics", t=pr["topics"]["total"], b=pr["topics"]["before"], a=pr["topics"]["after"])}</div>'
+             if pr.get('topics') else '') + '</div>')
     live_t = T['proof_live_' + R['mode']]
     if R['track']:
         n, when = R['track_sum'], R['track_when']
@@ -3381,11 +3880,20 @@ def render_html(R: dict, T: dict, lang: str) -> str:
             v = r[key]
             if r['source'] == 'gsc':
                 return T['pos_none'] if v is None else T['pos_avg'].format(n=v, i=r['imp'][0 if key == 'before' else 1])
+            if r['source'] == 'ctr':
+                return T['cell_ctr'].format(n=v, i=r['imp'][0 if key == 'before' else 1])
+            if r['source'] == 'traffic':
+                return T['cell_visitors'].format(n=v)
+            if r['source'] == 'field':
+                return field_fmt(r['metric'], v)
             return T['rank_pos'].format(n=v) if v else T['pos_out'].format(n=r['depth'])
+
+        def what(r):
+            return T['traffic_' + r['q']] if r['source'] == 'traffic' else r['q']
 
         w(f'<div class="place">{head("shield", live_t)}'
           f'<span>{fmt("live_sum", up=n["improved"], same=n["same"], down=n["worse"], unk=n["unknown"])}</span>'
-          + ''.join(f'<div class="ba"><span class="mut" style="font-size:12px">{E(T["src_" + r["source"]])}</span><br>{E(r["q"])}<br>'
+          + ''.join(f'<div class="ba"><span class="mut" style="font-size:12px">{E(T["src_" + r["source"]])}</span><br>{E(what(r))}<br>'
                     f'<s>{E(cell(r, "before"))}</s> → {E(cell(r, "after"))} · <b>{E(T["v_" + r["verdict"]])}</b></div>' for r in R['track'])
           + '<div class="mut" style="font-size:13px">'
           + (fmt('live_dates', d=when['live_since'], m=when['measured']) + ' ' if when['measured'] else '')
@@ -3520,6 +4028,11 @@ def cmd_status(args):
     print(f'next: {nxt}' if nxt else 'all steps done')
     t = st['steps'].get('track')
     print('after publishing: track ' + (f"done ({t['at']})" if t else 'not run'))
+    extra = [('gsc-research', 'site'), ('field-baseline', 'site'), ('field-after', 'site'), ('traffic-before', 'readme'),
+             ('traffic-after', 'readme')]
+    got = [f"{s} ({st['steps'][s]['at'][:10]})" for s, m in extra if m == args.mode and st['steps'].get(s)]
+    if got:
+        print('optional readings: ' + ', '.join(got))
 
 
 # ---------------------------------------------------------------- CLI
@@ -3662,11 +4175,24 @@ def main(argv=None):
     q.add_argument('--day', help='which raw/track/<day> folder to read (default: the newest)')
     q.set_defaults(fn=cmd_track_parse)
 
-    p = sub.add_parser('gsc', help='site only: a Search Console queries export (CSV) of the weeks before or after publishing')
+    p = sub.add_parser('gsc', help='site only: a Search Console queries export (CSV): for the research, or of the weeks '
+                                   'before or after publishing')
     p.add_argument('file', help='the Queries CSV of the export')
-    p.add_argument('--stage', required=True, choices=['before', 'after'])
+    p.add_argument('--stage', required=True, choices=['research', 'before', 'after'],
+                   help='research: before the map, lists the searches within reach; before/after: around publishing')
     p.add_argument('--period', required=True, help='START..END of the export, YYYY-MM-DD..YYYY-MM-DD')
+    p.add_argument('--top', type=int, default=20, help='research: how many queries to list')
     p.set_defaults(fn=cmd_gsc)
+
+    p = sub.add_parser('traffic', help="readme only: GitHub's 14-day visitors by referrer, before and after publishing")
+    p.add_argument('--stage', required=True, choices=['before', 'after'])
+    p.set_defaults(fn=cmd_traffic)
+
+    p = sub.add_parser('field', help='site only: what real Chrome users measured (Chrome UX Report), before and after publishing')
+    p.add_argument('--stage', required=True, choices=['baseline', 'after'])
+    p.add_argument('--file', help='a saved CrUX API or PageSpeed Insights answer, instead of asking with CRUX_API_KEY')
+    p.add_argument('--path', default='/', help='with --file: the page it is about (default: /)')
+    p.set_defaults(fn=cmd_field)
 
     args = ap.parse_args(argv)
     args.fn(args)
