@@ -1,0 +1,7 @@
+- Edit `eco.py` and the references only in `shared/`, then run `python tools/sync.py` to copy them into each `skills/*/` folder; `python tests/run.py` fails while a copy differs.
+- Tests: `python tests/run.py` (plain script, no pytest).
+- `eco.py` stays Python 3.9+ and standard library only.
+- Both skills keep `disable-model-invocation: true`: they run only by hand.
+- Bump the version in `.claude-plugin/plugin.json` on a release.
+- `evals/eco-readme.json`, `evals/eco-site.json` — eval prompts; read when a change alters what a skill does.
+- Add a feature, check or report section only when its effect on the search position of the user's site or README can be measured and confirmed; discard anything else, however polished it looks.

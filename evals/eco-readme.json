@@ -1,0 +1,19 @@
+{
+  "skill_name": "eco-readme",
+  "evals": [
+    {
+      "id": 1,
+      "name": "svipall-readme",
+      "prompt": "/eco-readme I want this repo's README (Svipall) to show up near the top when someone searches Google or GitHub for something Svipall solves. Do the keyword research thoroughly and rewrite whatever the README needs (README.md, it is the only one). If you have Quirón installed, use it without asking me. Do not commit or change anything on GitHub.",
+      "expected_output": "Keyword map backed by Suggest/GitHub/competitor evidence; README H1, lead and headings carry the primaries; Quirón run and keywords survive it; a fixed-format report; no commit, no gh repo edit. Every primary has saved results in .eco/readme/serp.json and the report shows the Search results line; no new claim left unchecked. report.html is written in the language of the prompt (--lang, or --labels for one without built-in labels) and served with eco.py serve on a 127.0.0.1 URL given to the user; report.md stays in English. The report has \"What is proven\" with the phrases in the files before and after, and its published-README line reads \"not checked\" (nothing was published in the run); the final message claims no ranking gain.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "themis-niche-readme",
+      "prompt": "/eco-readme themis is a very niche skill (it manages CLAUDE.md and AGENTS.md) and almost nobody finds it. Optimize the README so it shows up in searches, with keywords people actually use. Skip the humanizer, I don't want it this time. Do not commit or touch GitHub.",
+      "expected_output": "Brief marks the audience as niche and lists adjacent searches; keyword map with evidence and discarded phrases; README rewritten; Quirón recorded as skipped; report; no commit, no gh repo edit. Every primary has saved results in .eco/readme/serp.json (a README primary with no repo or topic page in its top 10 is dropped or carries a serp_note); no new claim left unchecked. report.html is written in the language of the prompt (--lang, or --labels for one without built-in labels) and served with eco.py serve on a 127.0.0.1 URL given to the user; report.md stays in English. The report has \"What is proven\" with the phrases in the files before and after, and its published-README line reads \"not checked\" (nothing was published in the run); the final message claims no ranking gain.",
+      "files": []
+    }
+  ]
+}

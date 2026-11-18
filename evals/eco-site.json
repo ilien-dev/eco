@@ -1,0 +1,12 @@
+{
+  "skill_name": "eco-site",
+  "evals": [
+    {
+      "id": 1,
+      "name": "svipall-site",
+      "prompt": "/eco-site This is the Svipall website (Astro). It is already built in dist/; if you change the sources in src/, rebuild with `npm run build` (do not install dependencies, they are already there). Improve the site's keyword SEO, only the English home page. If Quirón is installed, use it without asking. Do not commit.",
+      "expected_output": "Audit runs on built HTML; title 30-60 and meta 70-160 chars carry primaries; one H1; FAQ or headings for long-tail; Quirón run; nothing lost; report; no commit. Every primary has saved results in .eco/site/serp.json; the built page has no noindex, JSON-LD that parses, html lang, og:image and no templated meta description; no new claim left unchecked. dist/robots.txt allows the AI search bots and names the sitemap; the sitemap lists the page; llms.txt is checked or a missing one is in Pending; .eco/site/lighthouse-baseline.json scans production when the site answers (else the untouched build) and .eco/site/lighthouse-final.json the local build served as static files with serve (not astro dev or preview); every weighted audit under 1 is fixed or waived with a reason, invisible performance fixes made without asking, visual or behavior changes asked first; the report shows Lighthouse before and after. report.html is written in the language of the prompt (--lang, or --labels for one without built-in labels) and served with eco.py serve on a 127.0.0.1 URL given to the user; report.md stays in English. The report has \"What is proven\" with the phrases in the files before and after, and its published-site line reads \"not checked\" (nothing was published in the run); the final message claims no ranking gain.",
+      "files": []
+    }
+  ]
+}

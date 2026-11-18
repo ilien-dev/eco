@@ -1,0 +1,44 @@
+{
+  "brand": "Eco",
+  "tagline": "Que te encuentren por lo que la gente busca",
+  "brief": "Eco son dos skills para agentes de IA que investigan palabras clave y las colocan en el README y la web de un proyecto, con cada paso comprobado por un script. El logotipo nace de la ninfa Eco, la oréade de los montes de la que solo quedó la voz que responde.",
+  "adjectives": [
+    "preciso",
+    "comprobable",
+    "mitológico",
+    "sobrio"
+  ],
+  "criteria": "Reconocible a 16 px, funciona a una tinta, lejos de los clichés del SEO (lupas, flechas, gráficas) y del azul habitual en sus herramientas.",
+  "industry": "software",
+  "nav": [
+    "Qué hace",
+    "Instalar",
+    "GitHub"
+  ],
+  "brand_color": "#C4F03A",
+  "greyscale": false,
+  "designer": "Propuesta",
+  "round": 3,
+  "concepts": [
+    {
+      "name": "La montaña que responde",
+      "symbol": "../eco-symbol-tile.svg",
+      "lockup": "../eco-horizontal.svg",
+      "symbol_on_tile": "../symbol/eco-symbol-mono-151515.svg",
+      "symbol_on_dark": "../eco-symbol.svg",
+      "lockup_on_dark": "../lockups/eco-horizontal-on-dark.svg",
+      "idea": "Dos picos con una cueva y, dentro, un arco que repite al de fuera: la voz de Eco que vuelve desde la montaña.",
+      "rationale": [
+        "El mito sin literalidad: ni ninfa ni bocadillo, solo el lugar donde vive el eco",
+        "La cueva repetida es el eco hecho forma; a 16 px quedan los dos picos con su cueva",
+        "Lima y tinta, los colores del informe de eco: el lima solo se usa como superficie o sobre fondo oscuro, nunca como trazo sobre claro"
+      ]
+    }
+  ],
+  "recommendation": "Dirección elegida: A1. Color revisado a lima, a juego con el informe HTML (estructura «Mapa»).",
+  "next_steps": [
+    "Revisar el kit en lima",
+    "Búsqueda de marcas registradas",
+    "Usar el logotipo en el README y en la web"
+  ]
+}
