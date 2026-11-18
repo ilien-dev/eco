@@ -7,12 +7,12 @@ person first; a phrase that does not fit a sentence naturally belongs somewhere 
 
 | Placement | What it is | How to write it |
 |---|---|---|
-| `title` | `<title>` | 30 to 60 characters. The strongest primary near the start, then the project name or a second phrase. It becomes the blue link in results. |
-| `meta` | `<meta name="description">` | 70 to 160 characters. One sentence that says what it is and for whom, with one or two primaries. It is the snippet under the link, not a ranking signal by itself, so write it to be clicked. |
+| `title` | `<title>` | 30 to 60 characters (a display heuristic: Google publishes no limit and cuts by pixel width). The strongest primary near the start, then the project name or a second phrase. It becomes the blue link in results. |
+| `meta` | `<meta name="description">` | 70 to 160 characters, also a display heuristic. One sentence that says what it is and for whom, with one or two primaries. Do not open it with the title or close it with "Learn more" or "Get started": the audit flags both as templated. It is the snippet under the link, not a ranking signal by itself, so write it to be clicked. |
 | `h1` | the one `<h1>` | Exactly one per page. It can be a slogan, but give it the main noun ("README banner"), not only wordplay. |
 | `h2`, `h3` | section headings | Name what the section is about in the words people search. Vary them; one phrase in every heading is stuffing. |
-| `alt` | image alt text | Describe the image; include the phrase only when the image really shows it. |
-| `og` | Open Graph and Twitter tags | Title, description and image alt for link previews. |
+| `alt` | image alt text | Describe the image; include the phrase only when the image really shows it. A decorative image gets `alt=""`; an image with no alt attribute at all is flagged. |
+| `og` | Open Graph and Twitter tags | Title, description and image alt for link previews, plus an `og:image` (flagged when missing). |
 | `jsonld` | structured data | `SoftwareApplication` (or the type that fits), `FAQPage` built from the visible FAQ, `inLanguage`. Never put text there that the page does not show. Since 2023 Google shows FAQ rich results only for a few authoritative sites, so the FAQ earns its place through the visible text, not the snippet. |
 | `body` | visible text | The lead paragraph matters most. An FAQ section is the natural home for long-tail questions: ask them in the searcher's words and answer in two or three true sentences. |
 

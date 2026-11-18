@@ -2,7 +2,7 @@
   "name": "eco",
   "displayName": "Eco",
   "version": "0.1.0",
-  "description": "Keyword research and on-page SEO for a README or a website: finds what people search, puts those words where search engines and GitHub look, and proves it with scripts.",
+  "description": "Keyword research and SEO in two manual skills: eco-readme for a GitHub README and its About, eco-site for a website, with robots.txt, sitemap, llms.txt and Lighthouse checks. Every step is proven by a script.",
   "author": {
     "name": "jjimenezc",
     "url": "https://github.com/ilien-dev"
@@ -10,5 +10,13 @@
   "homepage": "https://github.com/ilien-dev/eco",
   "repository": "https://github.com/ilien-dev/eco",
   "license": "MIT",
-  "keywords": ["seo", "keyword-research", "readme", "github-seo", "agent-skills"]
+  "keywords": [
+    "seo",
+    "keyword-research",
+    "readme",
+    "github-seo",
+    "website-seo",
+    "lighthouse",
+    "agent-skills"
+  ]
 }

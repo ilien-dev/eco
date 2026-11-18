@@ -11,9 +11,15 @@
     {
       "name": "eco",
       "source": "./",
-      "description": "Keyword research and on-page SEO for a README or a website, checked by scripts.",
+      "description": "Keyword research and SEO for a README (eco-readme) or a website (eco-site), checked by scripts.",
       "category": "productivity",
-      "tags": ["seo", "keywords", "readme"]
+      "tags": [
+        "seo",
+        "keywords",
+        "readme",
+        "website",
+        "lighthouse"
+      ]
     }
   ]
 }
