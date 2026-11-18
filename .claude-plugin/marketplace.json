@@ -1,0 +1,19 @@
+{
+  "name": "eco",
+  "owner": {
+    "name": "jjimenezc",
+    "url": "https://github.com/ilien-dev"
+  },
+  "metadata": {
+    "description": "Marketplace for the Eco skill."
+  },
+  "plugins": [
+    {
+      "name": "eco",
+      "source": "./",
+      "description": "Keyword research and on-page SEO for a README or a website, checked by scripts.",
+      "category": "productivity",
+      "tags": ["seo", "keywords", "readme"]
+    }
+  ]
+}
