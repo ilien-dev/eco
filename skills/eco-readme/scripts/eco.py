@@ -52,7 +52,7 @@ from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 
-VERSION = '0.2.0'  # x-release-please-version
+VERSION = '0.2.1'  # x-release-please-version
 ECO = '.eco'
 
 # Research depth required before the map. Raise them for a bigger project; never lower
