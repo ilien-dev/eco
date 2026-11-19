@@ -87,8 +87,9 @@ holds for every kind of change, fixes and docs included.
 
 The title is a [Conventional Commit](https://www.conventionalcommits.org/) of at most 72
 characters: `feat: ...`, `fix: ...`, `perf: ...`, `refactor: ...`, `docs: ...`, `test: ...`,
-`ci: ...`, `chore: ...`. PRs are squash-merged and the title becomes the commit on `main`, so
-it has to describe the change exactly.
+`ci: ...`, `chore: ...`. PRs are squash-merged and the title becomes the commit on `main`. It also decides the next
+version: `feat` raises the minor number, a breaking change (`feat!:`) the major one, and any
+other type the patch. So it has to describe the change exactly.
 
 ### Description
 
@@ -128,7 +129,8 @@ node .github/scripts/check-pr.js --branch feature/gsc-click-rank \
 - `eco.py` stays Python 3.9+ and standard library only.
 - Both skills keep `disable-model-invocation: true`.
 - Code, comments and docs are in English.
-- Do not edit the version in `.claude-plugin/plugin.json`; the maintainer does it on a release.
+- Do not edit the version in `.claude-plugin/plugin.json` or `eco.py`. It is set automatically
+  from the PR title when the PR is merged into `main`.
 
 ### Review
 

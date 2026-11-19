@@ -59,12 +59,15 @@ python tools/sync.py
 python tests/run.py
 ```
 It must pass; report failures with their output. `eco.py` stays Python 3.9+ and standard
-library only. Do not change the version in `.claude-plugin/plugin.json`.
+library only. Never change the version in `.claude-plugin/plugin.json` or `eco.py`: it is
+set automatically when the PR is merged.
 
 ## 6. Title
 
 A Conventional Commit of at most 72 characters, lowercase after the type, no final period. It
-becomes the squash commit on `main`. Pick the type that tells the truth about the change:
+becomes the squash commit on `main` and decides the version: `feat` raises the minor number,
+a breaking change (`feat!:`) the major one, any other type the patch. Pick the type that tells
+the truth about the change:
 `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `chore`.
 
 ## 7. Description

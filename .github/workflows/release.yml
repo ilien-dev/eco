@@ -1,0 +1,71 @@
+name: Release
+
+# On every push to main: Cocogitto reads the commits since the last tag (each one a
+# squash-merged PR title), writes the new version into plugin.json and eco.py, updates
+# CHANGELOG.md, commits, tags and pushes both back to main, then publishes a GitHub
+# Release with the notes of that version. See cog.toml for which type bumps what.
+#
+# main is protected by a ruleset that only deploy keys may bypass, so the bump commit
+# and its tag are pushed over SSH with the write deploy key stored in the
+# RELEASE_DEPLOY_KEY secret. The bump commit carries [skip ci], so it does not start
+# this workflow again.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One release at a time. When several PRs are merged close together, a later run
+# releases every commit an earlier one did not get to.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Bump version and release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+
+      - uses: cocogitto/cocogitto-action@v4.2.0
+        with:
+          install-only: true
+
+      - name: cog bump --auto
+        id: bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # cog counts its own chore(version) commit, so with nothing new since the last
+          # release it would bump again. A tagged HEAD means there is nothing to release.
+          if git describe --tags --exact-match --match 'v*' HEAD >/dev/null 2>&1; then
+            echo "Nothing to release: HEAD is $(git describe --tags --exact-match HEAD)."
+            exit 0
+          fi
+          before=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo none)
+          cog bump --auto --skip-ci
+          after=$(git describe --tags --abbrev=0 --match 'v*')
+          if [ "$before" = "$after" ]; then
+            echo "Nothing to release."
+            exit 0
+          fi
+          # Commit and tag land together or not at all.
+          git push --atomic origin HEAD:main "$after"
+          echo "version=${after#v}" >> "$GITHUB_OUTPUT"
+
+      - name: GitHub Release
+        if: steps.bump.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          cog changelog --at "v$VERSION" > notes.md
+          gh release create "v$VERSION" --title "Eco $VERSION" --notes-file notes.md

@@ -36,4 +36,4 @@ Other changes: the tests that cover it, or how you checked it by hand.
 - [ ] I searched open PRs and issues and nobody is already doing this
 - [ ] I edited `shared/` only, ran `python tools/sync.py`, and `python tests/run.py` passes
 - [ ] The Measurement section has numbers from main and from this branch, or says why it does not apply
-- [ ] I did not change the version in `.claude-plugin/plugin.json`
+- [ ] I did not change the version (it is set when the PR is merged)

@@ -1,0 +1,35 @@
+# Cocogitto: version bumps and changelog from Conventional Commits.
+# The release workflow (.github/workflows/release.yml) runs `cog bump --auto` on every
+# push to main; nobody bumps the version by hand.
+#
+# Every PR title is a Conventional Commit (squash merge), so every merge releases:
+# feat -> minor, a breaking change (type! or BREAKING CHANGE) -> major, any other type -> patch.
+# Installed copies of the plugin only update when the version in plugin.json changes.
+
+tag_prefix = "v"
+branch_whitelist = ["main"]
+ignore_merge_commits = true
+
+# The version lives in plugin.json and in VERSION of eco.py (shared/ and both skill copies).
+pre_bump_hooks = [
+    '''sed -i -E 's/"version": "[^"]+"/"version": "{{version}}"/' .claude-plugin/plugin.json''',
+    '''sed -i -E "s/^VERSION = '[^']+'/VERSION = '{{version}}'/" shared/scripts/eco.py skills/eco-readme/scripts/eco.py skills/eco-site/scripts/eco.py''',
+]
+
+[commit_types]
+perf = { changelog_title = "Performance", bump_patch = true }
+refactor = { changelog_title = "Refactoring", bump_patch = true }
+revert = { changelog_title = "Reverts", bump_patch = true }
+docs = { changelog_title = "Documentation", bump_patch = true }
+test = { changelog_title = "Tests", bump_patch = true }
+build = { changelog_title = "Build", bump_patch = true }
+ci = { changelog_title = "CI", bump_patch = true }
+chore = { changelog_title = "Chores", bump_patch = true }
+style = { changelog_title = "Style", bump_patch = true }
+
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+owner = "ilien-dev"
+repository = "eco"
