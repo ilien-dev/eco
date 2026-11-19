@@ -6,23 +6,12 @@ body:
     attributes:
       value: |
         One problem per issue. Search the [existing issues](https://github.com/ilien-dev/eco/issues?q=is%3Aissue) first.
-        Never paste a Search Console export, a Chrome UX Report key, a GitHub token or private data from your `.eco/` folder.
-  - type: dropdown
-    id: skill
-    attributes:
-      label: Skill
-      options:
-        - eco-readme
-        - eco-site
-        - eco.py on its own
-    validations:
-      required: true
+        Never paste tokens, keys, passwords or private data.
   - type: textarea
     id: steps
     attributes:
       label: What you did
-      description: The prompt or the eco.py command, and the steps that lead to the problem.
-      placeholder: "1. /eco-site on my site\n2. ...\n3. eco.py --mode site audit"
+      description: The steps, command or prompt that lead to the problem.
     validations:
       required: true
   - type: textarea
@@ -35,29 +24,21 @@ body:
     id: actual
     attributes:
       label: What happened
-      description: The eco.py output or the agent's message, word for word, and a screenshot of the report if it helps.
+      description: The message or output word for word, and a screenshot if it helps.
     validations:
       required: true
   - type: input
-    id: eco
+    id: version
     attributes:
-      label: Eco version
-      description: The "version" in .claude-plugin/plugin.json of your install.
-      placeholder: "0.2.0"
+      label: Version
+      description: The Eco version you use.
     validations:
       required: true
   - type: input
-    id: agent
+    id: environment
     attributes:
-      label: Agent and model
-      placeholder: "Claude Code 2.x with Opus, Codex, ..."
-    validations:
-      required: true
-  - type: input
-    id: system
-    attributes:
-      label: Python version and operating system
-      placeholder: "Python 3.12, Windows 11"
+      label: Environment
+      description: Operating system, and anything else that matters here (runtime, agent, device).
   - type: checkboxes
     id: searched
     attributes:
