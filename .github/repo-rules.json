@@ -1,0 +1,93 @@
+{
+  "name": "Eco",
+  "repo": "ilien-dev/eco",
+  "defaultBranch": "main",
+  "purpose": "finds the words people search for and puts them where search engines read them, in your own README or website, and proves each step with a script.",
+  "shipped": [
+    "skills/**",
+    "shared/**",
+    ".claude-plugin/**"
+  ],
+  "visual": [
+    "brand/**"
+  ],
+  "issueFirst": false,
+  "measured": {
+    "enabled": true,
+    "types": [
+      "feat",
+      "fix",
+      "perf"
+    ],
+    "methods": [
+      "What a skill does (a `SKILL.md`, a reference, the steps an agent follows): the cases in `evals/eco-readme.json` and `evals/eco-site.json`, pass rate with the skill from `main` and with yours. If the change adds behavior no case covers, add the case in the same PR.",
+      "A new check or a fix in `eco.py`: the test in `tests/run.py` that fails on `main` and passes on your branch.",
+      "A claim about search position or traffic: the output of `eco.py track`, `gsc`, `traffic` or `field` before and after, on a real README or site you can name.",
+      "Speed or size: the time or the size on `main` and on the branch, measured the same way."
+    ]
+  },
+  "commands": [
+    "python tools/sync.py",
+    "python tests/run.py"
+  ],
+  "ci": {
+    "requiredChecks": [
+      "Tests (Python 3.9, ubuntu-24.04)",
+      "Tests (Python 3.9, windows-latest)",
+      "Tests (Python 3.13, ubuntu-24.04)",
+      "Tests (Python 3.13, windows-latest)"
+    ]
+  },
+  "release": {
+    "kind": "claude-plugin",
+    "currentVersion": "0.2.0",
+    "versionFiles": [
+      {
+        "path": ".claude-plugin/plugin.json",
+        "jsonpath": "$.version"
+      },
+      {
+        "path": "shared/scripts/eco.py",
+        "type": "generic"
+      },
+      {
+        "path": "skills/eco-readme/scripts/eco.py",
+        "type": "generic"
+      },
+      {
+        "path": "skills/eco-site/scripts/eco.py",
+        "type": "generic"
+      }
+    ],
+    "build": [],
+    "buildSecrets": [],
+    "npmPrepare": [],
+    "bootstrapSha": "bc7ba6cec3091d55c0b64b24508c858ff791ad25"
+  },
+  "standard": 1,
+  "branch": {
+    "types": [
+      "feat",
+      "fix",
+      "perf",
+      "refactor",
+      "docs",
+      "test",
+      "build",
+      "ci",
+      "chore",
+      "style",
+      "revert"
+    ],
+    "maxWords": 5
+  },
+  "title": {
+    "max": 72
+  },
+  "releaseTypes": [
+    "feat",
+    "fix",
+    "perf",
+    "revert"
+  ]
+}

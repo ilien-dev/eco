@@ -5,28 +5,26 @@ body:
   - type: markdown
     attributes:
       value: |
-        One idea per issue. Eco finds the words people search for and puts them in your own README or website, and proves each step with a script.
-        An idea goes in only when its effect can be measured; read "What it does" and "Limits" in the [README](https://github.com/ilien-dev/eco#readme) and search the
-        [issues](https://github.com/ilien-dev/eco/issues?q=is%3Aissue) and [pull requests](https://github.com/ilien-dev/eco/pulls?q=is%3Apr) first.
+        One idea per issue. Eco finds the words people search for and puts them where search engines read them, in your own README or website, and proves each step with a script. Ideas outside that purpose will be declined.
+        Search the [issues](https://github.com/ilien-dev/eco/issues?q=is%3Aissue) and [pull requests](https://github.com/ilien-dev/eco/pulls?q=is%3Apr) first.
   - type: textarea
     id: problem
     attributes:
       label: The problem
-      description: What you are trying to do and what gets in the way. At most a few sentences.
+      description: What you are trying to do and what gets in the way.
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
       label: What you propose
-      description: The change you have in mind.
     validations:
       required: true
   - type: textarea
     id: measure
     attributes:
       label: How it would be measured
-      description: The number that should move, and how to read it before and after (an eval, a test, eco.py track, gsc or traffic).
+      description: The number that should move, and how to read it before and after.
     validations:
       required: true
   - type: checkboxes

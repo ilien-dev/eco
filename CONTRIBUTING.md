@@ -1,144 +1,161 @@
 # Contributing to Eco
 
-Thanks for wanting to help. Contributing to Eco does not only mean pull requests: a clear
-issue that reports a bug or proposes an improvement is a contribution too.
+Thanks for wanting to help. A contribution does not have to be a pull request: a clear issue
+that reports a bug or proposes an improvement is a contribution too.
 
-Before anything else, read "What it does" and "Limits" in the [README](README.md). Eco does
-one job: it finds the words people search for and puts them where search engines read them, in
-your own README or website, and it proves each step with a script. **A contribution that
-drifts away from that purpose will be rejected**, however well it is made.
+Eco finds the words people search for and puts them where search engines read them, in your own README or website, and proves each step with a script. **A contribution that drifts away from that purpose will be rejected**,
+however well it is made.
+
+<!-- This file is generated from .github/repo-rules.json by Nabu (https://github.com/ilien-dev/nabu).
+     Project-specific notes go in .github/contributing-notes.md, which is copied below. -->
 
 ## Nothing is guaranteed
 
 Opening an issue or a pull request does not guarantee that it will be accepted or merged.
-Every change is reviewed before it goes in, with no exceptions, including the maintainer's
-own. A change can be declined for its scope, its approach or the cost of maintaining it.
+Every change is reviewed before it goes in, the maintainer's own included. A change can be
+declined for its scope, its approach or the cost of maintaining it.
 
 ## Before you start
 
-- **Search first.** Look through the [open pull requests](https://github.com/ilien-dev/eco/pulls)
-  and the [issues](https://github.com/ilien-dev/eco/issues), open and closed. Someone may
-  already be working on the same thing, or it may have been discussed and declined. If you
-  find it, add to that conversation instead of starting a new one.
-- **For anything bigger than a small fix, open an issue first** and wait for an answer. It is
-  the cheapest way to find out whether the change fits before you write it.
+- **Search first.** Look through the [pull requests](https://github.com/ilien-dev/eco/pulls?q=is%3Apr)
+  and the [issues](https://github.com/ilien-dev/eco/issues?q=is%3Aissue), open and closed. If someone
+  already works on it, or it was declined, add to that conversation instead.
+- **For anything bigger than a small fix, open an issue first** and wait for an answer. It is the
+  cheapest way to find out whether the change fits before you write it.
 
 ## Issues
 
-Use the forms: **Bug report** or **Feature request**. One issue per problem or idea.
+Use the forms: **Bug report** or **Feature request**. One issue per problem or idea. A bug report
+says what you did, what you expected and what happened; a feature request says the problem
+first and the solution after. Never paste tokens, keys or private data.
 
-- A bug report says which skill, what you did, what you expected, what happened (the
-  `eco.py` output word for word) and your Eco, agent and Python versions.
-- A feature request says the problem first, then the solution you have in mind, and how its
-  effect would be measured.
-- Never paste a Search Console export, a Chrome UX Report key, a GitHub token or private data
-  from your `.eco/` folder.
+## One change per pull request
 
-## Every change is measured
+Each pull request does **one thing**. A new feature comes alone: no settings change, no visual
+tweak elsewhere, no unrelated cleanup. Those go in their own pull requests. The smaller and more
+focused a PR is, the faster it can be reviewed and merged; a PR that mixes changes will be asked
+to split, or closed.
 
-A new feature, or a change to something that already exists, goes in only when it is measured
-and the numbers show that it adds value, or at least that nothing gets worse. A change that
-looks good but cannot be measured is declined. The measurement goes in the **Measurement**
-section of the PR, with the result on `main` and on your branch:
-
-- **What a skill does** (a `SKILL.md`, a reference, the steps an agent follows): run the cases
-  in `evals/eco-readme.json` and `evals/eco-site.json` with the skill from `main` and with your
-  version, and give the pass rate of each, before → after. They are in the format of the
-  [skill-creator](https://github.com/anthropics/skills) eval loop, which runs both versions side
-  by side and adds up the results. If the change adds behavior that no case covers, add the case
-  in the same PR.
-- **A new check or a fix in `eco.py`**: the test in `tests/run.py` that fails on `main` and
-  passes on your branch.
-- **A claim about search position or traffic**: the output of `eco.py track`, `gsc`, `traffic`
-  or `field` before and after, on a real README or site you can name.
-- **Speed or size**: the time or the size on `main` and on the branch, measured the same way.
-
-For a `feat`, `fix`, `perf` or `refactor` PR the section cannot say "not applicable". For
-`docs`, `ci`, `chore` or `test` it can, with the reason.
-
-## Pull requests
-
-### One thing at a time
-
-Each pull request does **one thing**. If you add a new research source, the PR adds that source
-and nothing else: no change to the report, no rewording of a reference, no unrelated cleanup.
-Those go in their own pull requests.
-
-Keep it as simple as possible. The smaller and more focused a PR is, the easier it is to see
-what it adds, whether it is done right and whether it fits Eco. A PR that mixes several changes
-will be asked to split, or closed.
-
-### Branch name
+## Branch name
 
 ```
-<type>/<1 to 4 words>
+<type>/<1 to 5 words>
 ```
 
-`<type>` is the same Conventional Commit type the title starts with: `feat`, `fix`, `perf`,
-`refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style` or `revert`. Then 1 to 4 words of
-lowercase letters and digits joined by single hyphens.
+`<type>` is the Conventional Commit type of the change, the same one the title starts with:
+`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style` or `revert`. Then 1 to 5 words of lowercase letters and digits joined by single
+hyphens.
 
-- `feat/gsc-click-rank` ✓
-- `fix/report-encoding` ✓
-- `docs/contribution-rules` ✓
-- `feat/GSC-Rank` ✗ (uppercase)
-- `feature/gsc-click-rank` ✗ (the type is `feat`, not `feature`)
-- `feat/rank-primaries-by-gsc-clicks` ✗ (five words)
+- `feat/export-cover-image` ✓
+- `fix/progress-bar-width` ✓
+- `feat/Export-Cover` ✗ (uppercase)
+- `feature/export-cover-image` ✗ (the type is `feat`)
+- `fix/add-a-new-progress-bar-width` ✗ (more than 5 words)
 
-### Title
+## Title and versions
 
-The title is a [Conventional Commit](https://www.conventionalcommits.org/) of at most 72
-characters: `feat: ...`, `fix: ...`, `perf: ...`, `refactor: ...`, `docs: ...`, `test: ...`,
-`ci: ...`, `chore: ...`. PRs are squash-merged and the title becomes the commit on `main`, so
-it has to describe the change exactly.
+The title is a [Conventional Commit](https://www.conventionalcommits.org/) of at most
+72 characters, with the same type as the branch: `feat: export the cover image`. Pull
+requests are squash-merged, so the title becomes the commit on `main`, and it decides
+the next version:
 
-### Description
+| Title | Version |
+|---|---|
+| `feat: ...` | new minor version (1.4.0 → 1.5.0) |
+| `fix: ...`, `perf: ...`, `revert: ...` | new patch version (1.4.0 → 1.4.1) |
+| `feat!: ...` or any type with `!` | new major version (1.4.0 → 2.0.0) |
+| `docs`, `test`, `ci`, `chore`, `refactor`, `build`, `style` | no new version |
 
-Start from the template GitHub fills in for you
-([`.github/pull_request_template.md`](.github/pull_request_template.md)). Every section is
-required and has a limit:
+**Nobody writes a version number.** A workflow publishes the version, the changelog and the
+release after every merge. Do not edit version numbers or `CHANGELOG.md`.
+A change to what users install (`skills/**`, `shared/**` and `.claude-plugin/**`) has to publish a version, or they never get it:
+its title must be `feat`, `fix`, `perf` or `revert`. The check rejects any other type for those files.
+
+## Every change to what users get is measured
+
+A new feature, a fix or a change to how something works goes in only when it is measured and the
+numbers show it adds value, or at least that nothing gets worse. A change that cannot be measured
+is declined, however good it looks. Put the result on `main` and on your branch in the
+**Measurement** section of the PR. How to measure here:
+
+- What a skill does (a `SKILL.md`, a reference, the steps an agent follows): the cases in `evals/eco-readme.json` and `evals/eco-site.json`, pass rate with the skill from `main` and with yours. If the change adds behavior no case covers, add the case in the same PR.
+- A new check or a fix in `eco.py`: the test in `tests/run.py` that fails on `main` and passes on your branch.
+- A claim about search position or traffic: the output of `eco.py track`, `gsc`, `traffic` or `field` before and after, on a real README or site you can name.
+- Speed or size: the time or the size on `main` and on the branch, measured the same way.
+
+For `feat`, `fix` or `perf` changes to what users get, Measurement cannot say "not applicable". For any
+other change it can, with the reason (`Not applicable: docs only`).
+
+## Description
+
+Start from the template GitHub fills in
+([`.github/pull_request_template.md`](.github/pull_request_template.md)). It is short on purpose:
+it holds what a reviewer needs to decide quickly, and nothing else.
 
 | Section | Limit | What goes in it |
 |---|---|---|
 | **What** | 280 characters | The one change this PR makes. |
 | **Why** | 280 characters | The problem it solves. Link the issue (`Closes #12`). |
 | **How** | 500 characters | The approach, and the main files it touches. |
-| **Measurement** | 500 characters | The numbers on `main` and on the branch (see above). |
-| **Evidence** | 300 characters of text | Screenshots; the tests or steps that check it. |
+| **Risk** | 200 characters | What could break, and how to undo it. |
+| **Measurement** | 500 characters | The numbers before and after (see above). |
+| **Evidence** | 300 characters of text | How you checked it, how a reviewer can check it; screenshots. |
 | **Checklist** | — | Every box ticked. |
 
-**Evidence.** Screenshots are always welcome, one or as many as it takes to make the change
-easy to understand. For a visual change (the HTML report, anything in `brand/`, how the README
-renders on GitHub) they are asked for, before and after. Take them yourself or ask your agent to
-take them; capture only that page or window, never the whole screen. Drag the files into the
-description box on GitHub to upload them. Images, GIFs and links do not count toward the limit.
-For a change with nothing to see, name the tests that cover it or say how you checked it.
+**Screenshots** are always welcome, one or as many as it takes to make the change easy to
+understand, and required for a visual change (anything in `brand/**`): before and after. Take them yourself
+or ask your agent to; capture only that window or page, never the whole screen. Drag the files
+into the description box on GitHub. Images, GIFs and links do not count toward the limit.
 
-A CI check verifies the branch name, the title length and the description. You can run it
-yourself before opening the PR:
+A check verifies the branch, the title and the description. Run it before opening the PR:
 
 ```
-node .github/scripts/check-pr.js --branch feat/gsc-click-rank \
-  --title "feat: rank primaries by search console clicks" --body-file pr.md
+node .github/scripts/check-pr.cjs --branch feat/export-cover-image \
+  --title "feat: export the cover image" --body-file pr.md --files-from-git main
 ```
 
-### Code
+## Before you push
 
-- Edit `eco.py` and the references only in `shared/`, then run `python tools/sync.py` to copy
-  them into each `skills/*/` folder. `python tests/run.py` must pass; it fails while a copy
-  differs. CI runs it on Linux and Windows, with Python 3.9 and the latest.
-- `eco.py` stays Python 3.9+ and standard library only.
-- Both skills keep `disable-model-invocation: true`.
-- Code, comments and docs are in English.
-- Do not edit the version in `.claude-plugin/plugin.json`; the maintainer does it on a release.
+```
+python tools/sync.py
+python tests/run.py
+```
 
-### Review
+Every command must pass; CI runs them again on the pull request.
 
-A pull request is merged only after an approval from someone with write access to the
-repository (for now, the maintainer) and with every check green. A new push dismisses an
-earlier approval. Answer review comments in the PR; keep extra changes for another PR.
+## Review
+
+A pull request is merged after an approval from someone with write access to the repository and
+with every check green. A new push dismisses an earlier approval. Answer review comments in the
+PR; keep extra changes for another PR.
 
 ## Working with an AI agent
 
 The rules are the same. Agents that read `.claude/skills` or `.agents/skills` have an
-`uncontributing` skill that walks through them step by step.
+`uncontributing` skill that walks through them step by step and checks the result.
+
+## Project notes
+
+### Code
+
+- Edit `eco.py` and the references only in `shared/`, then run `python tools/sync.py` to copy
+  them into each `skills/*/` folder. `python tests/run.py` fails while a copy differs. CI runs
+  it on Linux and Windows, with Python 3.9 and the latest.
+- `eco.py` stays Python 3.9+ and standard library only.
+- Both skills keep `disable-model-invocation: true`: they run only by hand.
+- Code, comments and docs are in English.
+
+### Evals
+
+`evals/eco-readme.json` and `evals/eco-site.json` are in the format of the
+[skill-creator](https://github.com/anthropics/skills) eval loop, which runs the skill from
+`main` and yours side by side and adds up the results.
+
+### Issues
+
+- A bug report names the skill, the `eco.py` output word for word and your Eco, agent and
+  Python versions.
+- A feature request says how its effect on search position would be measured.
+- Never paste a Search Console export, a Chrome UX Report key, a GitHub token or private data
+  from your `.eco/` folder.
+

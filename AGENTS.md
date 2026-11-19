@@ -2,6 +2,6 @@
 - Tests: `python tests/run.py` (plain script, no pytest).
 - `eco.py` stays Python 3.9+ and standard library only.
 - Both skills keep `disable-model-invocation: true`: they run only by hand.
-- Bump the version in `.claude-plugin/plugin.json` on a release.
+- Never edit a version: release-please writes it on each merge to `main`. Before a branch, commit, issue or PR, follow `CONTRIBUTING.md` and the `uncontributing` skill.
 - `evals/eco-readme.json`, `evals/eco-site.json` — eval prompts; read when a change alters what a skill does.
 - Add a feature, check or report section only when its effect on the search position of the user's site or README can be measured and confirmed; discard anything else, however polished it looks.

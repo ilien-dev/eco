@@ -1,19 +1,18 @@
 ---
 name: uncontributing
-description: Use before opening an issue, creating a branch, committing for a pull request, or writing a pull request title or description in the Eco repository. Walks through CONTRIBUTING.md (one change per PR, type/ branch names (feat/, fix/, docs/...), Conventional Commit titles, measured changes, the description format with character limits, screenshots) and checks the result with .github/scripts/check-pr.js.
+description: Use before opening an issue, creating a branch, committing for a pull request, or writing a pull request title or description in the Eco repository (ilien-dev/eco), even when the user only says "open a PR", "send this upstream" or "make a branch". Walks through CONTRIBUTING.md (one change per PR, <type>/ branch names, Conventional Commit titles that decide the version, the short PR format, measured changes, screenshots) and checks the result with .github/scripts/check-pr.cjs.
 ---
 
 # Contributing to Eco
 
-`CONTRIBUTING.md` is the source of truth; this skill is the order to apply it in. If the two
-disagree, follow `CONTRIBUTING.md` and point out the difference.
+`CONTRIBUTING.md` is the source of truth and `.github/repo-rules.json` holds every limit;
+this skill is the order to apply them in. If they disagree, follow `CONTRIBUTING.md` and point
+out the difference. The check script decides, not this text: run it.
 
-## 1. Is it in scope, and is it new?
+## 1. In scope, and new?
 
-- Read "What it does" and "Limits" in `README.md`. Eco finds the words people search for and
-  puts them in the user's own README or website, proving each step with `eco.py`. If the change
-  does not serve that, say so and stop: it will be rejected.
-- Search for the same work before writing anything:
+- Eco finds the words people search for and puts them where search engines read them, in your own README or website, and proves each step with a script. If the change does not serve that, say so and stop: it will be rejected.
+- Search before writing anything:
   ```
   gh pr list --repo ilien-dev/eco --state all --search "<keywords>"
   gh issue list --repo ilien-dev/eco --state all --search "<keywords>"
@@ -22,100 +21,69 @@ disagree, follow `CONTRIBUTING.md` and point out the difference.
 
 ## 2. One thing only
 
-Name the single change in one sentence. If the sentence needs an "and", it is two PRs: for
-example a new research source **and** a report change **and** a reworded reference are three
-pull requests. Propose the split to the user and do the first one. Leave unrelated fixes you
-notice for later; mention them, do not include them.
+Name the single change in one sentence. If it needs an "and", it is two PRs. Propose the split
+to the user and do the first one. Unrelated fixes you notice: mention them, leave them out.
 
-## 3. Can it be measured?
+## 3. Measure first
 
-A new feature or a change to existing behavior goes in only when the numbers show it adds
-value, or at least that nothing gets worse. Decide how before writing code, and take the
-`main` reading first, since it is lost once the code changes:
+A `feat`, `fix` or `perf` change to what users get goes in only when the numbers show it adds value or
+at least that nothing gets worse. Take the reading on `main` before changing code, since
+it is lost afterwards. How to measure here:
 
-- Skill behavior (`SKILL.md`, references): the cases in `evals/eco-readme.json` and
-  `evals/eco-site.json`, run with the skill from `main` and with the new one (the skill-creator
-  eval loop: old version as baseline). Pass rate before → after. Add a case if none covers the
-  new behavior.
-- A check or a fix in `eco.py`: a test in `tests/run.py` that fails on `main` and passes after.
-- Search position or traffic: `eco.py track`, `gsc`, `traffic` or `field`, before and after.
-- Speed or size: the same measurement on `main` and on the branch.
+- What a skill does (a `SKILL.md`, a reference, the steps an agent follows): the cases in `evals/eco-readme.json` and `evals/eco-site.json`, pass rate with the skill from `main` and with yours. If the change adds behavior no case covers, add the case in the same PR.
+- A new check or a fix in `eco.py`: the test in `tests/run.py` that fails on `main` and passes on your branch.
+- A claim about search position or traffic: the output of `eco.py track`, `gsc`, `traffic` or `field` before and after, on a real README or site you can name.
+- Speed or size: the time or the size on `main` and on the branch, measured the same way.
 
-If none of these can show the effect, tell the user the change will likely be declined, before
-doing the work.
+If nothing can show the effect, tell the user the change will likely be declined, before doing
+the work.
 
-## 4. Branch
+## Branch and title
 
-The Conventional Commit type the title will use, a slash, and 1 to 4 lowercase words (letters
-and digits) joined by single hyphens: `feat/gsc-click-rank`, `fix/report-encoding`,
-`docs/contribution-rules`. Use the short type, never `feature/`.
-Regex: `^(feat|fix|perf|refactor|docs|test|build|ci|chore|style|revert)/[a-z0-9]+(-[a-z0-9]+){0,3}$`.
+- Pick the Conventional Commit type that tells the truth: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style` or `revert`.
+- Branch: that type, a slash, 1 to 5 lowercase words joined by hyphens
+  (`feat/export-cover-image`). Never `feature/`.
+- Title: the same type, at most 72 characters, lowercase after the type, no final period
+  (`feat: export the cover image`). It becomes the commit on `main` and decides the
+  version: `feat` minor, `fix`/`perf`/`revert` patch, `!` major, the rest none.
+- A change to `skills/**`, `shared/**` and `.claude-plugin/**` reaches users, so it must be `feat`, `fix`, `perf` or `revert`.
+- Never edit a version number or `CHANGELOG.md`: the release workflow writes them.
 
-## 5. Code
+## Before committing
 
-Follow the repository's `CLAUDE.md`/`AGENTS.md`. Edit only `shared/`, never the copies in
-`skills/*/`. Before committing:
 ```
 python tools/sync.py
 python tests/run.py
 ```
-It must pass; report failures with their output. `eco.py` stays Python 3.9+ and standard
-library only. Do not change the version in `.claude-plugin/plugin.json`.
 
-## 6. Title
+Every command must pass; CI runs them again on the pull request.
 
-A Conventional Commit of at most 72 characters, lowercase after the type, no final period. It
-becomes the squash commit on `main`. Pick the type that tells the truth about the change:
-`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `ci`, `chore`.
+Report failures with their output; do not open the PR while one fails.
 
-## 7. Description
+## Description
 
-Copy `.github/pull_request_template.md` and fill every section. Limits are counted after HTML
-comments are removed; delete the template comments anyway.
+Copy `.github/pull_request_template.md` and fill every section, deleting the comments. Plain
+sentences: what changed, not how hard it was. No other headings, no summary at the end.
 
-| Section | Limit | Content |
-|---|---|---|
-| `## What` | 280 chars | The one change, one or two sentences. |
-| `## Why` | 280 chars | The problem for users. `Closes #N` when there is an issue. |
-| `## How` | 500 chars | The approach and the main files. |
-| `## Measurement` | 500 chars | `main` → branch, with the numbers from step 3. |
-| `## Evidence` | 300 chars of text | Images, GIFs and links do not count. |
-| `## Checklist` | — | Every box ticked, honestly. Untick and explain if one is not true. |
+- **What** (280): the one change. **Why** (280): the problem; `Closes #N`.
+- **How** (500): the approach and main files. **Risk** (200): what could break, how to undo it.
+- **Measurement** (500): `main` → branch, with numbers.
+- **Evidence** (300 of text): how you checked it and how the reviewer can, in a minute.
+- **Checklist**: tick only what is true; if one is not, say why instead of ticking it.
 
-For `feat`, `fix`, `perf` and `refactor`, Measurement cannot be "not applicable"; for `docs`,
-`ci`, `chore` and `test` write `Not applicable:` and the reason. Write plainly: what changed,
-not how hard it was. No headings beyond these, no summary at the end.
+**Screenshots.** Recommend them for every PR and offer to take them; they are required for a
+visual change (anything in `brand/**`), before and after. Capture only that window or page (a headless
+browser screenshot of the URL, or the window by its handle), never the whole screen. Save them
+in a temporary folder, not the repository. GitHub has no API to attach images to a PR: open the
+PR, give the user the absolute paths and ask them to drag the files into the description; put
+`Screenshots: to be attached.` in Evidence meanwhile.
 
-**Evidence.**
-- Recommend screenshots to the user for every PR, and offer to take them: one or several,
-  whatever makes the change easiest to understand. For a visual change (the HTML report served
-  with `eco.py serve`, anything in `brand/`, the README as GitHub renders it) they are asked for,
-  before and after.
-- Capture only that page or window (a headless browser screenshot of the URL, or the window by
-  its handle), never the whole screen: it can catch the user's other windows. Save the files in
-  a temporary folder, not in the repository.
-- GitHub has no API to upload images into a PR description. Open the PR, then give the user the
-  absolute paths of the files and ask them to drag them into the description. Put a placeholder
-  line in Evidence meanwhile, e.g. `Screenshots: to be attached.`
-- Non-visual change: name the tests that cover it, or the exact steps used to check it.
+## Check, then open
 
-## 8. Check before opening
-
-Write the description to a temporary file and run:
 ```
-node .github/scripts/check-pr.js --branch <branch> --title "<title>" --body-file <file>
-```
-The same check runs in CI as the required status `Branch name and description`. Fix every
-problem it lists, then open the PR:
-```
+node .github/scripts/check-pr.cjs --branch <branch> --title "<title>" --body-file <file> --files-from-git main
 gh pr create --title "<title>" --body-file <file>
 ```
-Do not merge. Every PR needs an approval from someone with write access, and the maintainer
-decides.
 
-## Issues
-
-Issues are contributions too. Use the forms in `.github/ISSUE_TEMPLATE/` (blank issues are
-disabled): one bug or one idea per issue, the problem before the solution, how it would be
-measured, and search first. Never include Search Console exports, a Chrome UX Report key, a
-GitHub token or private data from the user's `.eco/` folder.
+Fix every problem the check lists before opening; CI runs the same check as `PR rules`. Do not
+merge: every PR needs an approval from someone with write access.
