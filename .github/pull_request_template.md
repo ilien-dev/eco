@@ -1,6 +1,6 @@
 <!--
 Title: a Conventional Commit of at most 72 characters, e.g. "feat: rank primaries by search console clicks".
-Branch: feature/ + 1 to 4 lowercase words joined by hyphens, e.g. feature/gsc-click-rank.
+Branch: the title's type + / + 1 to 4 lowercase words joined by hyphens, e.g. feat/gsc-click-rank.
 One PR = one change. Read CONTRIBUTING.md before opening it.
 Comments like this one are removed before the limits are counted.
 -->

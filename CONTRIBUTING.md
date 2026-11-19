@@ -71,17 +71,19 @@ will be asked to split, or closed.
 ### Branch name
 
 ```
-feature/<1 to 4 words>
+<type>/<1 to 4 words>
 ```
 
-All lowercase, words of letters and digits joined by single hyphens, at most four words. This
-holds for every kind of change, fixes and docs included.
+`<type>` is the same Conventional Commit type the title starts with: `feat`, `fix`, `perf`,
+`refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style` or `revert`. Then 1 to 4 words of
+lowercase letters and digits joined by single hyphens.
 
-- `feature/gsc-click-rank` ✓
-- `feature/fix-report-encoding` ✓
-- `feature/GSC-Rank` ✗ (uppercase)
-- `fix/report-encoding` ✗ (does not start with `feature/`)
-- `feature/rank-primaries-by-gsc-clicks` ✗ (five words)
+- `feat/gsc-click-rank` ✓
+- `fix/report-encoding` ✓
+- `docs/contribution-rules` ✓
+- `feat/GSC-Rank` ✗ (uppercase)
+- `feature/gsc-click-rank` ✗ (the type is `feat`, not `feature`)
+- `feat/rank-primaries-by-gsc-clicks` ✗ (five words)
 
 ### Title
 
@@ -116,7 +118,7 @@ A CI check verifies the branch name, the title length and the description. You c
 yourself before opening the PR:
 
 ```
-node .github/scripts/check-pr.js --branch feature/gsc-click-rank \
+node .github/scripts/check-pr.js --branch feat/gsc-click-rank \
   --title "feat: rank primaries by search console clicks" --body-file pr.md
 ```
 
