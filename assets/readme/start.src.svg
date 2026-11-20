@@ -1,0 +1,86 @@
+<!--palette
+bg        #151515 #F4F4F2
+ink       #F4F4F2 #151515
+body      #D9DAD4 #33342F
+muted     #A9AAA3 #5E5F58
+panel     #1F201E #FFFFFF
+line      #33342F #D9DAD4
+ring      #262724 #E4E5E0
+lime      #C4F03A #C4F03A
+on_accent #151515 #151515
+accent    #C4F03A #4A6600
+tile      #151515 #C4F03A
+mark      #C4F03A #151515
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 448" role="img" aria-label="In a Claude Code session two install commands are typed and each gets a tick. Then, in your project, asking improve my SEO in plain words gets a cross and does nothing, while typing /eco:eco-readme runs Eco on a README and typing /eco:eco-site runs Eco on a website: Eco starts only from its commands.">
+<style>
+/* 12 s story, no delays: each part has its own keyframes
+   type 1   |type|==========================================|
+   tick 1        |in|====================================|out
+   type 2            |type|=================================|
+   tick 2                 |in|===========================|out
+   row 0 plain ask             |in|======================|out
+   cross                           |in|==================|out
+   row 1 /eco:eco-readme               |in|==============|out
+   tick                                    |in|==========|out
+   row 2 /eco:eco-site                         |in|======|out
+   tick                                            |in|==|out */
+@keyframes ripple{0%{transform:scale(.01);opacity:0}5%{opacity:1}88%{opacity:1}100%{transform:scale(1);opacity:0}}
+.ew{fill:none;stroke:$ring;stroke-width:2;animation:ripple 24s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes t1{0%,2%{transform:translateX(-356px);animation-timing-function:steps(37,end)}16%,94%{transform:translateX(0);animation-timing-function:steps(37,end)}100%{transform:translateX(-356px)}}
+@keyframes t2{0%,20%{transform:translateX(-222px);animation-timing-function:steps(23,end)}30%,94%{transform:translateX(0);animation-timing-function:steps(23,end)}100%{transform:translateX(-222px)}}
+.t1{animation:t1 12s linear infinite}
+.t2{animation:t2 12s linear infinite}
+@keyframes tick1{0%,15%{opacity:0;transform:scale(.6)}18%,92%{opacity:1;transform:scale(1)}95%,100%{opacity:0;transform:scale(1)}}
+@keyframes tick2{0%,30%{opacity:0;transform:scale(.6)}33%,92%{opacity:1;transform:scale(1)}95%,100%{opacity:0;transform:scale(1)}}
+@keyframes ans0{0%,39%{opacity:0;transform:scale(.6)}42%,92%{opacity:1;transform:scale(1)}95%,100%{opacity:0;transform:scale(1)}}
+@keyframes ans1{0%,51%{opacity:0;transform:scale(.6)}54%,92%{opacity:1;transform:scale(1)}95%,100%{opacity:0;transform:scale(1)}}
+@keyframes ans2{0%,63%{opacity:0;transform:scale(.6)}66%,92%{opacity:1;transform:scale(1)}95%,100%{opacity:0;transform:scale(1)}}
+.tick1{animation:tick1 12s cubic-bezier(0,0,.2,1) infinite;transform-box:fill-box;transform-origin:center}
+.tick2{animation:tick2 12s cubic-bezier(0,0,.2,1) infinite;transform-box:fill-box;transform-origin:center}
+.ans0{animation:ans0 12s cubic-bezier(0,0,.2,1) infinite;transform-box:fill-box;transform-origin:center}
+.ans1{animation:ans1 12s cubic-bezier(0,0,.2,1) infinite;transform-box:fill-box;transform-origin:center}
+.ans2{animation:ans2 12s cubic-bezier(0,0,.2,1) infinite;transform-box:fill-box;transform-origin:center}
+@keyframes row0{0%,34%{opacity:0;transform:translateY(12px)}37%,92%{opacity:1;transform:translateY(0)}95%,100%{opacity:0;transform:translateY(0)}}
+@keyframes row1{0%,46%{opacity:0;transform:translateY(12px)}49%,92%{opacity:1;transform:translateY(0)}95%,100%{opacity:0;transform:translateY(0)}}
+@keyframes row2{0%,58%{opacity:0;transform:translateY(12px)}61%,92%{opacity:1;transform:translateY(0)}95%,100%{opacity:0;transform:translateY(0)}}
+.row0{animation:row0 12s cubic-bezier(0,0,.2,1) infinite}
+.row1{animation:row1 12s cubic-bezier(0,0,.2,1) infinite}
+.row2{animation:row2 12s cubic-bezier(0,0,.2,1) infinite}
+@keyframes caret{0%,100%{opacity:1}50%{opacity:0}}
+.caret{animation:caret 1.1s steps(1,end) infinite}
+</style>
+<defs>
+<clipPath id="l1"><rect x="108" y="226" width="364" height="28"/></clipPath>
+<clipPath id="term"><rect x="66" y="208" width="556" height="222"/></clipPath>
+<clipPath id="l2"><rect x="108" y="270" width="230" height="28"/></clipPath>
+</defs>
+<rect width="1280" height="448" fill="$bg"/>
+<g id="backdrop" data-backdrop="custom rise"><g transform="translate(640 600)"><circle class="ew" style="animation-delay:-0s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-2s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-4s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-6s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-8s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-10s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-12s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-14s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-16s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-18s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-20s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-22s" r="897" vector-effect="non-scaling-stroke"/></g></g>
+<text id="eyebrow" x="64" y="56" class="m" font-size="15" letter-spacing="2" fill="$accent">HOW TO START</text>
+<text id="title" x="64" y="108" class="b" font-size="40" fill="$ink">Install once, then type the command</text>
+<text id="sub" x="64" y="146" class="s" font-size="20" fill="$body">Eco runs only when you call it by name.</text>
+<g id="stage">
+<!-- the session where you install it -->
+<g data-kit="terminal"><rect x="64" y="176" width="560" height="256" rx="12" fill="$panel" stroke="$line" stroke-width="1.5"/><path d="M64 206H624" stroke="$line" stroke-width="1.5"/><circle cx="84" cy="191" r="5" fill="$line"/><circle cx="100" cy="191" r="5" fill="$line"/><circle cx="116" cy="191" r="5" fill="$line"/><text x="344" y="196" class="m" font-size="14" fill="$muted" text-anchor="middle">Claude Code</text></g>
+<text x="88" y="246" class="m" font-size="16" fill="$accent">&gt;</text>
+<text x="108" y="246" class="m" font-size="16" fill="$ink">/plugin marketplace add ilien-dev/eco</text>
+<g clip-path="url(#l1)"><rect class="t1" x="464" y="228" width="364" height="24" fill="$panel"/></g>
+<g clip-path="url(#term)"><g class="tick1"><g transform="translate(576 226)" data-asset="ph:check-fat-fill" data-icon="done"><g transform="scale(0.109375)" color="$accent"><path fill="$accent" d="m243.31 90.91l-128.4 128.4a16 16 0 0 1-22.62 0l-71.62-72a16 16 0 0 1 0-22.61l20-20a16 16 0 0 1 22.58 0L104 144.22l96.76-95.57a16 16 0 0 1 22.59 0l19.95 19.54a16 16 0 0 1 .01 22.72"/></g></g></g></g>
+<text x="88" y="290" class="m" font-size="16" fill="$accent">&gt;</text>
+<text x="108" y="290" class="m" font-size="16" fill="$ink">/plugin install eco@eco</text>
+<g clip-path="url(#l2)"><rect class="t2" x="330" y="272" width="230" height="24" fill="$panel"/></g>
+<g clip-path="url(#term)"><g class="tick2"><g transform="translate(576 270)" data-asset="ph:check-fat-fill" data-icon="done"><g transform="scale(0.109375)" color="$accent"><path fill="$accent" d="m243.31 90.91l-128.4 128.4a16 16 0 0 1-22.62 0l-71.62-72a16 16 0 0 1 0-22.61l20-20a16 16 0 0 1 22.58 0L104 144.22l96.76-95.57a16 16 0 0 1 22.59 0l19.95 19.54a16 16 0 0 1 .01 22.72"/></g></g></g></g>
+<text x="88" y="334" class="m" font-size="16" fill="$accent">&gt;</text>
+<rect class="caret" x="108" y="320" width="9" height="18" fill="$accent"/>
+<!-- then, in your project: what starts it and what does not -->
+<rect x="656" y="176" width="560" height="256" rx="14" fill="$panel" stroke="$line" stroke-width="1.5"/>
+<text x="680" y="210" class="m" font-size="14" fill="$muted">in your project</text>
+<g class="row0"><rect x="680" y="230" width="272" height="52" rx="16" fill="$bg"/><text x="704" y="263" class="s" font-size="18" fill="$body">“improve my SEO”</text></g>
+<g class="ans0"><g transform="translate(980 236)" data-asset="ph:x-circle-fill" data-icon="does not start Eco"><g transform="scale(0.15625)" color="$muted"><path fill="$muted" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m37.66 130.34a8 8 0 0 1-11.32 11.32L128 139.31l-26.34 26.35a8 8 0 0 1-11.32-11.32L116.69 128l-26.35-26.34a8 8 0 0 1 11.32-11.32L128 116.69l26.34-26.35a8 8 0 0 1 11.32 11.32L139.31 128Z"/></g></g><text x="1036" y="262" class="s" font-size="16" fill="$muted">nothing</text></g>
+<g class="row1"><rect x="680" y="294" width="272" height="52" rx="16" fill="$lime"/><text x="704" y="327" class="m" font-size="18" fill="$on_accent">/eco:eco-readme</text></g>
+<g class="ans1"><g transform="translate(980 300)" data-asset="ph:check-circle-fill" data-icon="Eco starts"><g transform="scale(0.15625)" color="$accent"><path fill="$accent" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m45.66 85.66l-56 56a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L112 148.69l50.34-50.35a8 8 0 0 1 11.32 11.32"/></g></g><text x="1036" y="316" class="s" font-size="16" fill="$ink">Eco runs</text><text x="1036" y="338" class="m" font-size="14" fill="$muted">on a README</text></g>
+<g class="row2"><rect x="680" y="358" width="272" height="52" rx="16" fill="$lime"/><text x="704" y="391" class="m" font-size="18" fill="$on_accent">/eco:eco-site</text></g>
+<g class="ans2"><g transform="translate(980 364)" data-asset="ph:check-circle-fill" data-icon="Eco starts"><g transform="scale(0.15625)" color="$accent"><path fill="$accent" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m45.66 85.66l-56 56a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L112 148.69l50.34-50.35a8 8 0 0 1 11.32 11.32"/></g></g><text x="1036" y="380" class="s" font-size="16" fill="$ink">Eco runs</text><text x="1036" y="402" class="m" font-size="14" fill="$muted">on a website</text></g>
+</g>
+</svg>

@@ -1,0 +1,194 @@
+{
+  "picture:match.src.svg": {
+    "sha": "8b06ba06cac47229",
+    "pass": true,
+    "answer": "Rewriting a project's title so it contains every word of a search phrase: a before/after comparison of a README title and a web page title against a search query. A search box reads 'github readme banner', split into word chips github/readme/banner; the 'before' README title ('Jano: an animated SVG hero for your GitHub README') lights up github and readme, then gets an X with '2 of 3 words: no \"banner\"'; a line sweeps the 'after' title ('Jano: an animated GitHub README banner, drawn for your project'), all three chips turn green and it gets a check, '3 of 3 words'. The same plays for 'web scraping mcp server' on a page title (before 'Svipall: your agent doesn't read the web. It tries to.' 1 of 4 words, X; after 'Svipall: local web scraping MCP server with web search' 4 of 4, check). The final frame shows the README case finished.",
+    "why": "Blind judge saw the README title go from 2 of 3 to 3 of 3 searched words, and the page title go from 1 of 4 to 4 of 4."
+  },
+  "section:Why can't people find my project?": {
+    "sha": "2411456ec07d01cc",
+    "pass": true,
+    "answer": "Search engines match the exact words people type, so a title that leaves out a searched word gets passed over. It gives two real before/after titles, one for a README ('github readme banner') and one for a homepage ('web scraping mcp server'). It also says Eco takes its words from what Google, Bing and DuckDuckGo suggest as you type and from pages that already rank, so it isn't guessing.",
+    "why": "Reader understood that a title missing a searched word gets passed over, and saw the README and homepage before/after titles."
+  },
+  "picture:places.src.svg": {
+    "sha": "1b4774f2d5475a25",
+    "pass": true,
+    "answer": "Where a search phrase is placed on a README page and on a website, with everything else left as is. A 'your-project' window shows a README mock with dashed outlines on the title, first lines, image and About topics; one by one each outline turns solid and a side card names the place and phrase: Title 'github readme banner', First lines 'readme header', Image alt text 'github readme banner'. Then an 'example.com' page with <head> tags: Page title 'web scraping mcp server', Meta description 'web scraping mcp server', Headings (h2, h3) 'web search mcp'. Each card ends with 'The rest: untouched'. The final frame highlights the About topics with 'Topics: github-readme-banner'.",
+    "why": "Blind judge saw the README and example.com places outlined, one phrase each, with 'The rest: untouched'."
+  },
+  "section:Will it change my text?": {
+    "sha": "e8ef1032aa4f7958",
+    "pass": true,
+    "answer": "Eco edits only a few spots. In a README: the title, the first lines, headings, image alt text, and the GitHub About and topics. On a website: each page's title, meta description, headings and link preview. For sites it also checks robots.txt, the sitemap and page speed. It doesn't stuff in keywords. It shows a before/after for every line, and it never commits, pushes or changes GitHub by itself. For GitHub settings it gives you a `gh repo edit` command to run yourself.",
+    "why": "Reader understood that only a few places change in a README and on a website, one phrase per place, and the rest stays untouched. Reader also said the picture shows only the repo page."
+  },
+  "picture:track.src.svg": {
+    "sha": "20f35e1596c65a5d",
+    "pass": true,
+    "answer": "Checking the placements, then measuring weeks after publishing whether each phrase's search position changed. A 'report · checks' card lists h1 github readme banner, lead readme header, alt github readme banner, body svg banner, ticks appearing one by one; a dashed arrow leads to a globe 'you publish / weeks later'; a terminal running '$ eco.py track' shows per phrase a status that cycles between 'too early to tell' (dashed), 'no change', 'improved' (green) and 'worse' (grey), the two phrases trading improved/worse. The final frame shows both phrases as 'too early to tell'.",
+    "why": "Blind judge saw the checks ticked in the report, then publish, then eco.py track giving each phrase a verdict."
+  },
+  "section:How do I know it worked?": {
+    "sha": "df3652653f1d3f5d",
+    "pass": true,
+    "answer": "There are three steps. First, before you get the report, a script checks that every phrase is where it should be and that nothing broke, and it won't finish until every check passes. Second, you publish, and search engines take days or weeks to notice. Third, you run `eco.py track`, which repeats the saved searches and gives each one a verdict: improved, no change, worse, or too early to tell. For websites, `eco.py gsc` compares Search Console data from before and after.",
+    "why": "Reader understood that a script checks before the report and that eco.py track later repeats the saved searches and gives each one a verdict."
+  },
+  "picture:start.src.svg": {
+    "sha": "619b4079cdac8f3c",
+    "pass": true,
+    "answer": "Installing the tool as a Claude Code plugin and how it is started: by its own commands, not by a plain request. An empty Claude Code prompt; '/plugin marketplace add ilien-dev/eco' is typed and ticked; '/plugin ins...' is typed out to '/plugin install eco@eco' and ticked; on the right 'in your project': '\"improve my SEO\"' gets an X and 'nothing', then '/eco:eco-readme' appears with a check 'Eco runs on a README', then '/eco:eco-site' with a check 'Eco runs on a website'. The loop repeats; the final frame shows all of it done.",
+    "why": "Blind judge saw the two install commands, saw that 'improve my SEO' does nothing, and saw /eco:eco-readme and /eco:eco-site start Eco."
+  },
+  "section:How do I start?": {
+    "sha": "090774f1c35c9a12",
+    "pass": true,
+    "answer": "In Claude Code, add the marketplace and install the plugin with two /plugin commands. Then open your project and type `/eco:eco-readme` for a README or `/eco:eco-site` for a website. Agents that use npx skills type `/eco-readme` or `/eco-site` instead. Saying 'improve my SEO' in plain words won't start Eco, because a run takes a while and changes your text. With other agents you install through `npx skills add ilien-dev/eco`, and eco-site needs Node.js 18+.",
+    "why": "Reader understood the two /plugin commands, that Eco starts only by typing its own commands, and which command is for a README and which for a website."
+  },
+  "icon:hero.src.svg#1": {
+    "sha": "09b3fd677ddd2a10",
+    "pass": true,
+    "answer": "green magnifying glass: search / keyword research (sure: True)",
+    "why": "#1 magnifying glass, search; sure."
+  },
+  "icon:hero.src.svg#2": {
+    "sha": "4ea52b402b47b04f",
+    "pass": true,
+    "answer": "green document page with 'MD' on it: Markdown file, a README (sure: True)",
+    "why": "#2 MD document, a README; sure."
+  },
+  "icon:hero.src.svg#3": {
+    "sha": "7c7a1428eb1a58db",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / done / success (sure: True)",
+    "why": "#3 check, passed/done; sure."
+  },
+  "icon:hero.src.svg#4": {
+    "sha": "ae013e6bb4bc5327",
+    "pass": true,
+    "answer": "green zig-zag line with an upward arrow: trending up, ranking or traffic improving (sure: True)",
+    "why": "#4 upward trend, ranking improving; sure."
+  },
+  "icon:hero.src.svg#5": {
+    "sha": "dd1a6db6e6861e4f",
+    "pass": true,
+    "answer": "grey magnifying glass on a grey circle: search (inactive or query field) (sure: True)",
+    "why": "#5 magnifying glass, search; sure."
+  },
+  "icon:hero.src.svg#6": {
+    "sha": "0a96087ebf72853b",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / done (sure: True)",
+    "why": "#6 check, passed/done; sure."
+  },
+  "icon:hero.src.svg#7": {
+    "sha": "1dde59e1a39da2a2",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / done (sure: True)",
+    "why": "#7 check, passed/done; sure."
+  },
+  "icon:match.src.svg#1": {
+    "sha": "e413695c1a27cd90",
+    "pass": true,
+    "answer": "grey magnifying glass on a grey circle: search (inactive or query field) (sure: True)",
+    "why": "#8 magnifying glass, search; sure."
+  },
+  "icon:match.src.svg#2": {
+    "sha": "05be596f273e2213",
+    "pass": true,
+    "answer": "grey circle with an X: failed / missing / does nothing (sure: True)",
+    "why": "#9 X, failed/missing; sure."
+  },
+  "icon:match.src.svg#3": {
+    "sha": "cd23842fc6cafea7",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / works (sure: True)",
+    "why": "#10 check, passed/works; sure."
+  },
+  "icon:match.src.svg#4": {
+    "sha": "fb7ce215494c71b3",
+    "pass": true,
+    "answer": "grey circle with an X: failed / missing (sure: True)",
+    "why": "#11 X, failed/missing; sure."
+  },
+  "icon:match.src.svg#5": {
+    "sha": "6dcf8010c3cc42d6",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / works (sure: True)",
+    "why": "#12 check, passed/works; sure."
+  },
+  "icon:places.src.svg#1": {
+    "sha": "ff902eb8d2aed85d",
+    "pass": true,
+    "answer": "grey picture placeholder with mountains: image (here, an image whose alt text is set) (sure: True)",
+    "why": "#13 picture placeholder, an image; sure."
+  },
+  "icon:track.src.svg#1": {
+    "sha": "c96c5c7dcda49960",
+    "pass": true,
+    "answer": "green check mark, no circle: check passed (sure: True)",
+    "why": "#14 check, check passed; sure."
+  },
+  "icon:track.src.svg#2": {
+    "sha": "c30c520861a7a17e",
+    "pass": true,
+    "answer": "green check mark: check passed (sure: True)",
+    "why": "#15 check, check passed; sure."
+  },
+  "icon:track.src.svg#3": {
+    "sha": "e339657bfcec9aaa",
+    "pass": true,
+    "answer": "green check mark: check passed (sure: True)",
+    "why": "#16 check, check passed; sure."
+  },
+  "icon:track.src.svg#4": {
+    "sha": "f36a2ac487db9200",
+    "pass": true,
+    "answer": "green check mark: check passed (sure: True)",
+    "why": "#17 check, check passed; sure."
+  },
+  "icon:track.src.svg#5": {
+    "sha": "8701041bbcbd3698",
+    "pass": true,
+    "answer": "green globe with meridian and latitude lines: web / published online / public site (sure: True)",
+    "why": "#18 globe, web/published online; sure."
+  },
+  "icon:start.src.svg#1": {
+    "sha": "7569ee2fca53f21c",
+    "pass": true,
+    "answer": "green check mark: check passed (sure: True)",
+    "why": "#19 check, passed/done; sure."
+  },
+  "icon:start.src.svg#2": {
+    "sha": "e8a2618b517d1cdc",
+    "pass": true,
+    "answer": "green check mark: check passed (sure: True)",
+    "why": "#20 check, passed/done; sure."
+  },
+  "icon:start.src.svg#3": {
+    "sha": "e2d83f9d23cb30b8",
+    "pass": true,
+    "answer": "grey circle with an X: failed / nothing happens (sure: True)",
+    "why": "#21 X, failed/nothing happens; sure."
+  },
+  "icon:start.src.svg#4": {
+    "sha": "2420a5b842a28ceb",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / runs (sure: True)",
+    "why": "#22 check, passed/runs; sure."
+  },
+  "icon:start.src.svg#5": {
+    "sha": "6bd534d8e90ff773",
+    "pass": true,
+    "answer": "green circle with a check mark: passed / runs (sure: True)",
+    "why": "#23 check, passed/runs; sure."
+  },
+  "readme": {
+    "sha": "612278fa51e9917d",
+    "pass": true,
+    "answer": "Eco is a pair of Claude Code (and other AI agent) skills that find the phrases people actually search for and put them into the few places search engines read in a GitHub README or a website, check each placement with a script, and later re-run the searches to measure position. It's meant for developers and project owners who want their project found but don't know SEO.",
+    "why": "Reader said: for project owners who want to be found, it puts the phrases people really search for where search engines read them in a README or a site, and checks each placement with a script."
+  }
+}

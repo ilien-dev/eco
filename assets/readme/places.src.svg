@@ -1,0 +1,152 @@
+<!--palette
+bg        #151515 #F4F4F2
+ink       #F4F4F2 #151515
+body      #D9DAD4 #33342F
+muted     #A9AAA3 #5E5F58
+panel     #1F201E #FFFFFF
+line      #33342F #D9DAD4
+ring      #262724 #E4E5E0
+lime      #C4F03A #C4F03A
+on_accent #151515 #151515
+accent    #C4F03A #4A6600
+tile      #151515 #C4F03A
+mark      #C4F03A #151515
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 448" role="img" aria-label="Two stories take turns. First a repository page where four places light up one at a time: the title, the first lines, the image alt text and the topics. Then a web page at example.com where the page title, the meta description, the headings and the link preview light up in turn. A card names each place and the phrase that goes there; the rest of the text stays grey and untouched.">
+<style>
+/* 24 s loop: the repository page (A) in the first 12 s, the web page (B) in the second.
+   Each story keeps its 12 s timing inside halfA / halfB; each half slides 10 px as it swaps.
+   12 s story, four places of 3 s each, no delays: each place has its own keyframes
+   ring0 / turn0  |in|==rest==|out|
+   ring1 / turn1              |in|==rest==|out|
+   ring2 / turn2                          |in|==rest==|out|
+   ring3 / turn3                                      |in|==rest==|out| */
+@keyframes ripple{0%{transform:scale(.01);opacity:0}5%{opacity:1}88%{opacity:1}100%{transform:scale(1);opacity:0}}
+.ew{fill:none;stroke:$ring;stroke-width:2;animation:ripple 24s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes halfA{0%,48.5%{opacity:1}49.5%,99%{opacity:0}100%{opacity:1}}
+.halfA{animation:halfA 24s linear infinite}
+@keyframes halfB{0%,49%{opacity:0}50%,98.5%{opacity:1}99.5%,100%{opacity:0}}
+.halfB{animation:halfB 24s linear infinite}
+@keyframes slideA{0%,48.5%{transform:translateY(0)}49.5%,99%{transform:translateY(10px)}100%{transform:translateY(0)}}
+.slideA{animation:slideA 24s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes slideB{0%,49%{transform:translateY(10px)}50%,98.5%{transform:translateY(0)}99.5%,100%{transform:translateY(10px)}}
+.slideB{animation:slideB 24s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes ring0{0%{opacity:0}4%,25%{opacity:1}29%,100%{opacity:0}}
+@keyframes ring1{0%,25%{opacity:0}29%,50%{opacity:1}54%,100%{opacity:0}}
+@keyframes ring2{0%,50%{opacity:0}54%,75%{opacity:1}79%,100%{opacity:0}}
+@keyframes ring3{0%,75%{opacity:0}79%,96%{opacity:1}98.5%,100%{opacity:0}}
+.ring0{animation:ring0 12s cubic-bezier(.4,0,.2,1) infinite}
+.ring1{animation:ring1 12s cubic-bezier(.4,0,.2,1) infinite}
+.ring2{animation:ring2 12s cubic-bezier(.4,0,.2,1) infinite}
+.ring3{animation:ring3 12s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes turn0{0%{transform:translateY(24px);opacity:0}4%,25%{transform:translateY(0);opacity:1}29%,100%{transform:translateY(-24px);opacity:0}}
+@keyframes turn1{0%,25%{transform:translateY(24px);opacity:0}29%,50%{transform:translateY(0);opacity:1}54%,100%{transform:translateY(-24px);opacity:0}}
+@keyframes turn2{0%,50%{transform:translateY(24px);opacity:0}54%,75%{transform:translateY(0);opacity:1}79%,100%{transform:translateY(-24px);opacity:0}}
+@keyframes turn3{0%,75%{transform:translateY(24px);opacity:0}79%,96%{transform:translateY(0);opacity:1}98.5%,100%{transform:translateY(24px);opacity:0}}
+.turn0{animation:turn0 12s cubic-bezier(.4,0,.2,1) infinite}
+.turn1{animation:turn1 12s cubic-bezier(.4,0,.2,1) infinite}
+.turn2{animation:turn2 12s cubic-bezier(.4,0,.2,1) infinite}
+.turn3{animation:turn3 12s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.flow{animation:flow 1.2s linear infinite}
+</style>
+<defs><clipPath id="cardclip"><rect x="928" y="232" width="272" height="150"/></clipPath></defs>
+<rect width="1280" height="448" fill="$bg"/>
+<g id="backdrop" data-backdrop="custom rise"><g transform="translate(640 600)"><circle class="ew" style="animation-delay:-0s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-2s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-4s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-6s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-8s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-10s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-12s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-14s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-16s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-18s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-20s" r="897" vector-effect="non-scaling-stroke"/><circle class="ew" style="animation-delay:-22s" r="897" vector-effect="non-scaling-stroke"/></g></g>
+<text id="eyebrow" x="64" y="56" class="m" font-size="15" letter-spacing="2" fill="$accent">WHAT CHANGES</text>
+<text id="title" x="64" y="108" class="b" font-size="40" fill="$ink">Only the places search engines read</text>
+<text id="sub" x="64" y="146" class="s" font-size="20" fill="$body">One phrase per place. The rest of your text stays as you wrote it.</text>
+<g id="stage">
+<!-- the window: a repository page (A), then a web page (B) -->
+<rect x="64" y="176" width="816" height="256" rx="14" fill="$panel" stroke="$line" stroke-width="1.5"/>
+<path d="M64 210H880" stroke="$line" stroke-width="1.5"/>
+<circle cx="84" cy="193" r="5" fill="$line"/><circle cx="100" cy="193" r="5" fill="$line"/><circle cx="116" cy="193" r="5" fill="$line"/>
+<path d="M596 226V416" stroke="$line" stroke-width="1.5"/>
+<!-- A: the repository page -->
+<g class="halfA"><g class="slideA">
+<text x="472" y="198" class="m" font-size="14" fill="$muted" text-anchor="middle">your-project</text>
+<rect x="92" y="230" width="300" height="18" rx="9" fill="$ink"/>
+<rect x="92" y="266" width="440" height="9" rx="4.5" fill="$body"/>
+<rect x="92" y="283" width="400" height="9" rx="4.5" fill="$body"/>
+<rect x="92" y="310" width="200" height="88" rx="10" fill="$line"/>
+<g transform="translate(172 334)" data-asset="ph:image-fill" data-icon="a picture"><g transform="scale(0.15625)" color="$muted"><path fill="$muted" d="M216 40H40a16 16 0 0 0-16 16v144a16 16 0 0 0 16 16h176a16 16 0 0 0 16-16V56a16 16 0 0 0-16-16m-60 48a12 12 0 1 1-12 12a12 12 0 0 1 12-12m60 112H40v-39.31l46.34-46.35a8 8 0 0 1 11.32 0L165 181.66a8 8 0 0 0 11.32-11.32l-17.66-17.65L173 138.34a8 8 0 0 1 11.31 0L216 170.07z"/></g></g>
+<rect x="310" y="316" width="250" height="9" rx="4.5" fill="$line"/>
+<rect x="310" y="334" width="230" height="9" rx="4.5" fill="$line"/>
+<rect x="310" y="352" width="246" height="9" rx="4.5" fill="$line"/>
+<rect x="310" y="370" width="200" height="9" rx="4.5" fill="$line"/>
+<rect x="310" y="388" width="226" height="9" rx="4.5" fill="$line"/>
+<text x="620" y="244" class="b" font-size="16" fill="$ink">About</text>
+<rect x="620" y="260" width="230" height="9" rx="4.5" fill="$line"/>
+<rect x="620" y="277" width="190" height="9" rx="4.5" fill="$line"/>
+<rect x="620" y="306" width="68" height="24" rx="12" fill="none" stroke="$accent" stroke-width="1.5"/>
+<rect x="696" y="306" width="84" height="24" rx="12" fill="none" stroke="$accent" stroke-width="1.5"/>
+<rect x="620" y="338" width="96" height="24" rx="12" fill="none" stroke="$accent" stroke-width="1.5"/>
+<rect x="724" y="338" width="60" height="24" rx="12" fill="none" stroke="$accent" stroke-width="1.5"/>
+<g fill="none" stroke="$accent" stroke-width="2" stroke-dasharray="6 6">
+<rect x="80" y="220" width="324" height="38" rx="10"/>
+<rect x="80" y="258" width="464" height="42" rx="10"/>
+<rect x="80" y="300" width="224" height="108" rx="12"/>
+<rect x="608" y="296" width="190" height="76" rx="12"/>
+</g>
+<g fill="none" stroke="$accent" stroke-width="3">
+<g class="ring0" opacity="0"><rect x="80" y="220" width="324" height="38" rx="10"/></g>
+<g class="ring1" opacity="0"><rect x="80" y="258" width="464" height="42" rx="10"/></g>
+<g class="ring2" opacity="0"><rect x="80" y="300" width="224" height="108" rx="12"/></g>
+<g data-rest="shown"><g class="ring3"><rect x="608" y="296" width="190" height="76" rx="12"/></g></g>
+</g>
+</g></g>
+<!-- B: the web page, its visible headings on the left, its head on the right -->
+<g class="halfB" opacity="0"><g class="slideB">
+<text x="472" y="198" class="m" font-size="14" fill="$muted" text-anchor="middle">example.com</text>
+<rect x="92" y="230" width="280" height="18" rx="9" fill="$ink"/>
+<rect x="92" y="264" width="440" height="9" rx="4.5" fill="$line"/>
+<rect x="92" y="280" width="400" height="9" rx="4.5" fill="$line"/>
+<rect x="92" y="304" width="260" height="14" rx="7" fill="$body"/>
+<text x="364" y="316" class="m" font-size="14" fill="$muted">h2</text>
+<rect x="92" y="332" width="430" height="9" rx="4.5" fill="$line"/>
+<rect x="92" y="364" width="220" height="14" rx="7" fill="$body"/>
+<text x="324" y="376" class="m" font-size="14" fill="$muted">h3</text>
+<rect x="92" y="394" width="410" height="9" rx="4.5" fill="$line"/>
+<text x="620" y="240" class="m" font-size="16" fill="$ink">&lt;head&gt;</text>
+<text x="624" y="271" class="m" font-size="14" fill="$muted">&lt;title&gt;</text>
+<rect x="624" y="278" width="190" height="7" rx="3.5" fill="$line"/>
+<text x="624" y="323" class="m" font-size="14" fill="$muted">&lt;meta description&gt;</text>
+<rect x="624" y="330" width="200" height="7" rx="3.5" fill="$line"/>
+<text x="624" y="375" class="m" font-size="14" fill="$muted">og:title</text>
+<rect x="624" y="382" width="170" height="7" rx="3.5" fill="$line"/>
+<g fill="none" stroke="$accent" stroke-width="2" stroke-dasharray="6 6">
+<rect x="608" y="252" width="240" height="42" rx="10"/>
+<rect x="608" y="304" width="240" height="42" rx="10"/>
+<rect x="80" y="296" width="324" height="30" rx="9"/>
+<rect x="80" y="356" width="284" height="30" rx="9"/>
+<rect x="608" y="356" width="240" height="42" rx="10"/>
+</g>
+<g fill="none" stroke="$accent" stroke-width="3">
+<g class="ring0" opacity="0"><rect x="608" y="252" width="240" height="42" rx="10"/></g>
+<g class="ring1" opacity="0"><rect x="608" y="304" width="240" height="42" rx="10"/></g>
+<g class="ring2" opacity="0"><rect x="80" y="296" width="324" height="30" rx="9"/><rect x="80" y="356" width="284" height="30" rx="9"/></g>
+<g data-rest="shown"><g class="ring3"><rect x="608" y="356" width="240" height="42" rx="10"/></g></g>
+</g>
+</g></g>
+<!-- from the page to the card -->
+<path class="flow" d="M884 306H906" fill="none" stroke="$muted" stroke-width="2" stroke-dasharray="8 16"/>
+<!-- the card that names it -->
+<rect x="912" y="176" width="304" height="256" rx="14" fill="$panel" stroke="$line" stroke-width="1.5"/>
+<text x="936" y="210" class="m" font-size="14" fill="$muted">place · phrase</text>
+<g clip-path="url(#cardclip)">
+<g class="halfA">
+<g class="turn0" opacity="0"><text x="936" y="276" class="b" font-size="24" fill="$ink">Title</text><rect x="936" y="296" width="220" height="38" rx="8" fill="$lime"/><text x="1046" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">github readme banner</text></g>
+<g class="turn1" opacity="0"><text x="936" y="276" class="b" font-size="24" fill="$ink">First lines</text><rect x="936" y="296" width="220" height="38" rx="8" fill="$lime"/><text x="1046" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">readme header</text></g>
+<g class="turn2" opacity="0"><text x="936" y="276" class="b" font-size="24" fill="$ink">Image alt text</text><rect x="936" y="296" width="220" height="38" rx="8" fill="$lime"/><text x="1046" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">github readme banner</text></g>
+<g data-rest="shown"><g class="turn3"><text x="936" y="276" class="b" font-size="24" fill="$ink">Topics</text><rect x="936" y="296" width="220" height="38" rx="8" fill="$lime"/><text x="1046" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">github-readme-banner</text></g></g>
+</g>
+<g class="halfB" opacity="0">
+<g class="turn0" opacity="0"><text x="936" y="276" class="b" font-size="24" fill="$ink">Page title</text><rect x="936" y="296" width="248" height="38" rx="8" fill="$lime"/><text x="1060" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">web scraping mcp server</text></g>
+<g class="turn1" opacity="0"><text x="936" y="276" class="b" font-size="24" fill="$ink">Meta description</text><rect x="936" y="296" width="248" height="38" rx="8" fill="$lime"/><text x="1060" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">web scraping mcp server</text></g>
+<g class="turn2" opacity="0"><text x="936" y="276" class="b" font-size="24" fill="$ink">Headings</text><rect x="936" y="296" width="248" height="38" rx="8" fill="$lime"/><text x="1060" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">web search mcp</text></g>
+<g data-rest="shown"><g class="turn3"><text x="936" y="276" class="b" font-size="24" fill="$ink">Link preview</text><rect x="936" y="296" width="248" height="38" rx="8" fill="$lime"/><text x="1060" y="321" class="b" font-size="16" fill="$on_accent" text-anchor="middle">web scraping mcp server</text></g></g>
+</g>
+</g>
+<text x="936" y="404" class="b" font-size="18" fill="$body">The rest: untouched</text>
+</g>
+</svg>
