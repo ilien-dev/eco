@@ -2,3 +2,5 @@ __pycache__/
 .eco/
 *-workspace/
 .muninn/
+.codex/
+.impeccable/
