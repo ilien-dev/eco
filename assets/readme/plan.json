@@ -1,0 +1,125 @@
+{
+  "audience": "general",
+  "audience_confirmed": true,
+  "sentence": "Someone who keeps a GitHub project or a website and wants people to find it, before they publish or rewrite it, gets the words people really type into search engines put where Google and GitHub read them, with every change checked instead of taken on trust.",
+  "language": "en",
+  "translations": [],
+  "unfinished": [
+    {
+      "item": "eco-site and everything new in 0.2.0 has only run in the test suite, never a full run on a real website",
+      "source": "docs/limits.md:19",
+      "match": "full run on a real",
+      "decision": "keep"
+    }
+  ],
+  "captures_agreed": false,
+  "backdrop": "custom rise",
+  "hero": {
+    "file": "assets/hero.src.svg",
+    "shows": [
+      "search box with typed query",
+      "search suggestions",
+      "mountain with a cave",
+      "echo waves from the cave",
+      "phrase chip travelling",
+      "README page with phrase placed",
+      "web page title tag with phrase placed",
+      "eco readme and eco site command pill"
+    ]
+  },
+  "sections": [
+    {
+      "heading": "Why can't people find my project?",
+      "role": "demo",
+      "docs": null,
+      "picture": {
+        "file": "assets/readme/match.src.svg",
+        "type": "drawn",
+        "claim": "A search only reaches a title that uses the words people type: a README title and then a web page title each go from missing searched words to having every one of them after Eco.",
+        "shows": [
+          "searched words as chips, three then four",
+          "README title before and after",
+          "web page title before and after",
+          "words found count, of 3 and of 4",
+          "cross before, tick after"
+        ]
+      }
+    },
+    {
+      "heading": "Will it change my text?",
+      "role": "features",
+      "docs": "docs/how-it-works.md",
+      "picture": {
+        "file": "assets/readme/places.src.svg",
+        "type": "drawn",
+        "claim": "Eco changes only the few places search engines read, one phrase per place, on a repository page and on a web page, and leaves the rest of the text as it was.",
+        "shows": [
+          "repository page skeleton",
+          "about box and topics",
+          "web page window with head tags",
+          "meta description, headings and link preview",
+          "places lit one at a time",
+          "name card for the lit place"
+        ]
+      }
+    },
+    {
+      "heading": "How do I know it worked?",
+      "role": "how",
+      "docs": "docs/measuring-results.md",
+      "picture": {
+        "file": "assets/readme/track.src.svg",
+        "type": "drawn",
+        "claim": "A script checks every change before the report, and after you publish it repeats the saved searches and gives each one a verdict.",
+        "shows": [
+          "checklist with ticks",
+          "publish step",
+          "track command",
+          "saved searches rows",
+          "verdict chips"
+        ]
+      }
+    },
+    {
+      "heading": "How do I start?",
+      "role": "install",
+      "docs": null,
+      "picture": {
+        "file": "assets/readme/start.src.svg",
+        "type": "drawn",
+        "claim": "Two commands install it, and it runs only when you type its command in your project: /eco:eco-readme for a README, /eco:eco-site for a website.",
+        "shows": [
+          "terminal typing install commands",
+          "plain request that does nothing",
+          "readme command, runs on a README",
+          "site command, runs on a website"
+        ]
+      }
+    },
+    {
+      "heading": "What can't it do?",
+      "role": "limits",
+      "docs": "docs/limits.md",
+      "picture": null
+    },
+    {
+      "heading": "Where can I read more?",
+      "role": "reference",
+      "docs": "docs/checks.md",
+      "picture": null
+    },
+    {
+      "heading": "License",
+      "role": "license",
+      "docs": null,
+      "picture": null
+    }
+  ],
+  "assets": {
+    "icons": {
+      "family": "ph",
+      "variant": "fill",
+      "why": "solid, heavy glyphs with slightly rounded joins, like the solid mountain mark; tabler filled lacks a terminal and its check is a thin line"
+    }
+  }
+}
