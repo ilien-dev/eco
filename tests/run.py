@@ -565,6 +565,20 @@ def main() -> None:
             code, out = run(tmp, 'track', 'parse', '--published', (today - datetime.timedelta(days=10)).isoformat())
             check('once the index has had time, an unchanged position is no change',
                   code == 0 and '| GitHub search | github-banner | #2 | #2 | no change |' in out and '2 improved, 1 no change' in out, out)
+            # Running the research again once the changes are finished must not turn the "after" into the "before".
+            rg = tmp / '.eco' / 'readme' / 'raw' / 'github'
+            write(rg / 'readme-banner.json', json.dumps({'total_count': 130, 'items': [{'full_name': 'me/widget'}, other]}))
+            write(rg / 'late-search.json', json.dumps({'total_count': 5, 'items': [{'full_name': 'me/widget'}]}))
+            code, out = run(tmp, 'github', 'parse')
+            check('github parse keeps the positions saved before the edits', 'readme-banner  me/widget: #2' in out and 'kept' in out, out)
+            serp_file('github readme banner', ['https://github.com/me/widget'] + pages[:8])
+            code, out = run(tmp, 'serp', 'parse')
+            check('serp parse keeps the positions saved before the edits', 'github readme banner: 9 results (8 page, 1 repo); yours: not in the first 9' in out and 'kept' in out, out)
+            code, out = run(tmp, 'track', 'parse', '--published', (today - datetime.timedelta(days=10)).isoformat())
+            check('track still compares with the position before the edits', code == 0
+                  and '| GitHub search | readme-banner | #2 | #1 | improved |' in out
+                  and '| DuckDuckGo | github readme banner [en] | not in the first 9 | #3 | improved: now in the results |' in out
+                  and 'late-search' not in out, out)
         finally:
             eco.fetch_page = saved_fetch
         code, out = run(tmp, 'traffic', '--stage', 'before')

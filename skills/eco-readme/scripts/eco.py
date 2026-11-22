@@ -231,6 +231,11 @@ def mark(args, step: str, **info) -> None:
     save(eco_dir(args) / 'state.json', st)
 
 
+def before_kept(args) -> bool:
+    """Once the edits are finished, a search parsed again is no longer a "before": the saved positions stay."""
+    return 'audit-final' in state(args)['steps']
+
+
 def ok(msg: str) -> None:
     print(f'OK    {msg}')
 
@@ -617,6 +622,9 @@ def cmd_github_parse(args):
     own = (b.get('github', {}).get('repo') or '').lower()
     files = [Path(f) for f in args.files] if args.files else sorted((d / 'raw' / 'github').rglob('*'))
     data = load(d / 'github.json', {'searches': [], 'repos': {}})
+    keep = before_kept(args)
+    prev = {s['label']: s for s in data['searches']}
+    kept = 0
     for f in files:
         if not f.is_file():
             continue
@@ -629,10 +637,16 @@ def cmd_github_parse(args):
         data['searches'] = [s for s in data['searches'] if s['file'] != str(f)]
         for n, res in enumerate(found):
             names = [str(i.get('full_name', '')).lower() for i in res['items']]
-            data['searches'].append({
-                'file': str(f), 'label': f.stem + (f'#{n + 1}' if len(found) > 1 else ''),
-                'total_count': res['total_count'], 'top': names[:10],
-                'own_rank': names.index(own) + 1 if own and own in names else None})
+            label = f.stem + (f'#{n + 1}' if len(found) > 1 else '')
+            s = {'file': str(f), 'label': label, 'total_count': res['total_count'], 'top': names[:10],
+                 'own_rank': names.index(own) + 1 if own and own in names else None}
+            if keep:
+                kept += 1
+                if 'own_rank' in prev.get(label, {}):
+                    s['own_rank'] = prev[label]['own_rank']
+                else:
+                    del s['own_rank']
+            data['searches'].append(s)
             for it in res['items']:
                 data['repos'][it.get('full_name')] = {
                     'description': it.get('description') or '', 'topics': it.get('topics') or [],
@@ -642,9 +656,14 @@ def cmd_github_parse(args):
     save(d / 'github.json', data)
     print(f"{len(data['searches'])} searches, {len(data['repos'])} repos, {len(topics)} topics")
     for s in data['searches']:
-        rank = f"  {own}: #{s['own_rank']}" if s.get('own_rank') else (f'  {own}: not in the top results' if own else '')
+        if 'own_rank' not in s:
+            rank = f'  {own}: no position before the edits' if own else ''
+        else:
+            rank = f"  {own}: #{s['own_rank']}" if s.get('own_rank') else (f'  {own}: not in the top results' if own else '')
         print(f"  {s['total_count']:>8} repos  {s['label']}{rank}")
     print('  top topics: ' + ', '.join(f'{t} ({n})' for t, n in topics.most_common(args.top)))
+    if kept:
+        print('  the edits are finished, so the positions saved before them were kept; `eco.py track` measures the new ones')
     mark(args, 'github', searches=len(data['searches']))
 
 
@@ -1233,6 +1252,9 @@ def cmd_serp_parse(args):
     plan = load(d / 'serp-plan.json', {'queries': {}})
     data = load(d / 'serp.json', {'queries': {}})
     keys = own_keys(load(d / 'brief.json', {}))
+    keep = before_kept(args)
+    prev = dict(data['queries'])
+    kept = 0
     for f in sorted((d / 'raw' / 'serp').rglob('*')) if (d / 'raw' / 'serp').exists() else []:
         if not f.is_file():
             continue
@@ -1246,8 +1268,15 @@ def cmd_serp_parse(args):
             warn(f'{f.name}: no results found; the page may be a block or a captcha, not results')
             continue
         # Where the project stands before any edit ships: the "before" that `track` compares with.
-        data['queries'][slug] = dict(plan['queries'][slug], results=res, kinds=dict(Counter(result_kind(u) for u in res)),
-                                     own_rank=own_rank_in(every, keys), seen=len(every))
+        q = dict(plan['queries'][slug], results=res, kinds=dict(Counter(result_kind(u) for u in res)),
+                 own_rank=own_rank_in(every, keys), seen=len(every))
+        if keep:
+            kept += 1
+            if 'own_rank' in prev.get(slug, {}):
+                q.update(own_rank=prev[slug]['own_rank'], seen=prev[slug]['seen'])
+            else:
+                del q['own_rank']
+        data['queries'][slug] = q
     save(d / 'serp.json', data)
     for slug, s in data['queries'].items():
         kinds = ', '.join(f'{n} {k}' for k, n in sorted(s['kinds'].items(), key=lambda x: -x[1]))
@@ -1257,6 +1286,8 @@ def cmd_serp_parse(args):
         print(f"  [{s['lang']}] {s['q']}: {len(s['results'])} results ({kinds}){own}")
     for a, b, n in serp_overlaps(data):
         print(f"  {a!r} and {b!r} share {n} of the top {SERP_TOP}" + ('; one search intent' if n >= SERP_SAME_INTENT else ''))
+    if kept:
+        print('  the edits are finished, so the positions saved before them were kept; `eco.py track` measures the new ones')
     mark(args, 'serp', queries=len(data['queries']))
 
 
@@ -2500,6 +2531,8 @@ def cmd_track_urls(args):
     before = load(d / 'github.json', {'searches': []})['searches']
     n = 0
     for s in before:
+        if 'own_rank' not in s:
+            continue
         n += 1
         if s['label'] in gp:
             print(f"github/{s['label']}.json  {github_search_url(gp[s['label']])}")
@@ -2523,7 +2556,7 @@ def cmd_track_fetch(args):
     gp = load(d / 'github-plan.json', {'queries': {}})['queries']
     sq = load(d / 'serp.json', {'queries': {}})['queries']
     todo = [(out / 'github' / f"{s['label']}.json", github_search_url(gp[s['label']]), 'en')
-            for s in load(d / 'github.json', {'searches': []})['searches'] if s['label'] in gp]
+            for s in load(d / 'github.json', {'searches': []})['searches'] if s['label'] in gp and 'own_rank' in s]
     todo += [(out / 'serp' / f'{slug}.html', q['url'], q['lang'])
              for slug, q in load(d / 'serp-plan.json', {'queries': {}})['queries'].items() if 'own_rank' in sq.get(slug, {})]
     first = True
@@ -2753,7 +2786,7 @@ def track_rows(args) -> list[dict]:
 
         before = {s['label']: s for s in load(d / 'github.json', {'searches': []})['searches']}
         for label, a in snap['github'].items():
-            if label in before:
+            if 'own_rank' in before.get(label, {}):
                 depth = max(a['seen'], 1) if a['seen'] < GITHUB_PER_PAGE else GITHUB_PER_PAGE
                 r0, r1 = within(before[label].get('own_rank'), depth), within(a['rank'], depth)
                 rows.append({'source': 'github', 'q': label, 'lang': '', 'before': r0, 'after': r1, 'depth': depth,
@@ -3231,7 +3264,7 @@ def cmd_report(args):
             out.append(L['nogoogle'].format(lang=lang))
     own = b.get('github', {}).get('repo')
     if own and gh.get('searches'):
-        ranks = '; '.join(f"{s['label']}: " + (f"#{s['own_rank']}" if s.get('own_rank') else L['notin']) for s in gh['searches'][:6])
+        ranks = '; '.join(f"{s['label']}: " + (f"#{s['own_rank']}" if s.get('own_rank') else L['notin']) for s in [s for s in gh['searches'] if 'own_rank' in s][:6])
         out.append(f"{L['rank']} ({own}): {ranks}.")
     serp = load(d / 'serp.json', {'queries': {}})
     if serp['queries']:
@@ -3630,7 +3663,7 @@ def report_data(args, b, km, sug, gh, comp, serp, base, final, integ, st, q, lh,
         'broken': sum(len(g.get('broken_internal') or []) for g in integ.values()),
         'queries': len(sug['responses']), 'engines': dict(engines), 'langs': dict(langs), 'nogoogle': nogoogle,
         'repos': len(gh['repos']), 'comps': len(comp['pages']),
-        'own': b.get('github', {}).get('repo'), 'ranks': [(s['label'], s.get('own_rank')) for s in gh.get('searches', [])[:6]],
+        'own': b.get('github', {}).get('repo'), 'ranks': [(s['label'], s.get('own_rank')) for s in [s for s in gh.get('searches', []) if 'own_rank' in s][:6]],
         'serp': list(serp['queries'].values()), 'overlaps': serp_overlaps(serp),
         'keywords': [dict(k, places=sorted(set(places.get((k['phrase'], k['lang']), [])))) for k in kws],
         'surfaces': surfaces, 'offsite': st.get('offsite'),
