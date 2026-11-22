@@ -1,7 +1,7 @@
 {
   "name": "eco",
   "displayName": "Eco",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Keyword research and SEO in two manual skills: eco-readme for a GitHub README and its About, eco-site for a website, with robots.txt, sitemap, llms.txt and Lighthouse checks. Every step is proven by a script.",
   "author": {
     "name": "jjimenezc",
